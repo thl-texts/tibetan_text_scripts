@@ -1,8 +1,8 @@
 @echo off
 
-for %%f in (RTFs\*.rtf) do (
+for %%f in (in\*.rtf) do (
     echo Doing %%~nf
-    copy %%f Unicode\%%~nf.rtf
-    c:\unicdocp\udp.exe -x rtf Unicode\%%~nf.rtf
-    del Unicode\%%~nf.BAK
+    copy %%f out\%%~nf.rtf
+    c:\unicdocp\udp.exe -x rtf out\%%~nf.rtf
+    del out\%%~nf.BAK
 )
