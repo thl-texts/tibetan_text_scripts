@@ -3,6 +3,9 @@ Various scripts for Windows 10 and Mac OS X to convert files with Sambhota fonts
 
 This was developed originally for the Peltsek Kama files that were in Sambhota font.
 
+* **Developer:** Than Grove
+* **Creation Date:** July 31, 2019
+
 ## Set Up 
 As detailed in the next section, this conversion method uses both a Mac OS 10 and Windows 10 environment. The main 
 conversion script is a Python script run on the Mac. It was written for Python 3 and only uses two additional packages:
