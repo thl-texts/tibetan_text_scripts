@@ -16,8 +16,11 @@ steps:
 1. Install Python on your Mac using Homebrew with `brew install python3` (Note: if you don't have Homebrew 
 installed, look to [its installation page](https://docs.brew.sh/Installation)). This will also install `pip`
 2. In a terminal window navigate into this repos directory on your Mac machine
-3. Run `pip install venv`
+3. Type `python -m virtualenv venv`
+4. Type `source venv/bin/activate`
+5. Type `pip install -r requirements.txt`
 
+*Note:* To get out of the virtual environment, either close the terminal or type `deactivate`
 
 ## Overall Process
 
