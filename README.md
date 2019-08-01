@@ -30,7 +30,8 @@ installed, look to [its installation page](https://docs.brew.sh/Installation)). 
 The conversion process is a multi-stepped process that requires both a Mac and a Windows machine to proceed 
 most efficiently. I did it by using Virtual Box to create a virtual Windows 10 machine on my Mac and shared 
 the files between the virtual Windows machine and my Mac through UVA Box, but other ways to transfer files 
-are also possible. The steps in the process were:
+are also possible. When you just want to convert the individual files into templated Word docs with the same 
+name, then the steps in the process are:
 
 1. Download the original Word .doc files to the `in` folder here on Mac
 2. Run `doc2rtf.sh in out` - this converts the .doc files to .rtf and puts in the `out` folder
@@ -52,6 +53,16 @@ but with the text between the « and » marked up as Annotations style. A metada
 of the document.
 
 The document template used is in the `resources` folder. It is `tibtext-styled-tpl.docx`.
+
+## Spliting into Texts
+Sometimes the Sambhota texts received are volumes or volume "chunks" that need to be broken up into individual texts. 
+For the Kama I wrote a script that did this, which may work for other collections. This script is `split_into_texts.py`
+All documents to be processed should be put in the `in` folder and the results will go in the `out` folder. There are 
+two global variables of note. `filefilterstr` is the file name prefix for the files to process in the IN folder, 
+assuming they all begin with the same string such as "KAMA". `text_break_string` is the string used to split the chunks
+into texts. This is the universal string that separates two texts in a document. For the KAMA it was '༄༅'. Further 
+modifications will need to be done to break on the 'བཞུགས་སོ།' since the line just before will also need to be included in 
+the subsequent text. This has not yet been implemented.
 
 **NOTE**: It is _important_ that the styles be up-to-date. Download the latest Word doc template with THL Styles
 from [this Google Docs link](https://drive.google.com/open?id=1e5BL8fZym-YnbQTyN-qpWDu5nbqqn98i) (It is in the folder
