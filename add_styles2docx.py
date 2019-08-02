@@ -60,13 +60,15 @@ def do_annotations(p, mydoc):
     :return: Null (manipulation done by reference)
     '''
     annotstyl = get_style(mydoc, "Annotations")
-    ptxt = p.text
-    pts = ptxt.split("«")
+    # ptxt = p.text
+    # for dolpopa
+    ptxt = p.text.replace("«", "").replace("»", "")  # Ignore the smaller font
+    pts = ptxt.split("<")  # for dolpopa was «
     if len(pts) > 1:
         p.clear()
         p.add_run(pts[0])
         for rn in pts[1:]:
-            rnpts = rn.split("»")
+            rnpts = rn.split(">")  # for dolpopa was »
             if len(rnpts) == 1:
                 print("No closing annotation marker")
                 p.add_run(rn, annotstyl)
@@ -77,7 +79,6 @@ def do_annotations(p, mydoc):
                     print("more than two closing annotation markers!")
                     runtxt = ''.join(rnpts[1:])
                 p.add_run(runtxt)
-
 
 
 def get_template_doc(fnm):

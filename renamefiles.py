@@ -6,10 +6,23 @@ from os.path import isdir, join
 import re
 import shutil
 
-rootdir = '/Users/thangrove/Documents/Sandbox/THL/Taranatha/Originals'
-pdfdir = '/Users/thangrove/Documents/Sandbox/THL/Taranatha/Renamed/pdfs'
-textdir = '/Users/thangrove/Documents/Sandbox/THL/Taranatha/Renamed/texts'
-miscdir = '/Users/thangrove/Documents/Sandbox/THL/Taranatha/Renamed/misc'
+# Taranatha File Renaming
+# rootdir = '/Users/thangrove/Documents/Sandbox/THL/Taranatha/Originals'
+# pdfdir = '/Users/thangrove/Documents/Sandbox/THL/Taranatha/Renamed/pdfs'
+# textdir = '/Users/thangrove/Documents/Sandbox/THL/Taranatha/Renamed/texts'
+# miscdir = '/Users/thangrove/Documents/Sandbox/THL/Taranatha/Renamed/misc'
+# filepat = r'^\[?\(?(\d+)\)?\]?\.doc'
+# fileprefix = 'tn-pk'
+
+# Dolpopa File Renaming
+rootdir = '/Users/thangrove/Documents/Sandbox/THL/Dolpopa/Originals'
+pdfdir = '/Users/thangrove/Documents/Sandbox/THL/Dolpopa/Renamed/pdfs'
+textdir = '/Users/thangrove/Documents/Sandbox/THL/Dolpopa/Renamed/texts'
+miscdir = '/Users/thangrove/Documents/Sandbox/THL/Dolpopa/Renamed/misc'
+filepat = r'^\[?(\d+)[^\.]*\.+doc'
+# find files that optionally start with [, then a number followed by any number of non-period characters, followed by
+# one or many periods followed by "doc" (Need to ignore case because some have DOC)
+fileprefix = 'dpp'
 
 # Get list of all dirs in root folders
 dirs = [d for d in os.listdir(rootdir) if isdir(join(rootdir, d))]
@@ -38,17 +51,20 @@ for dnum in dkeys:
         if flnm.startswith('~') or flnm.startswith('.') or flnm.endswith('.tmp'):
             continue
         src = join(currdir, flnm)
-        mtch = re.match(r'^\[?\(?(\d+)\)?\]?\.doc', flnm)
+        mtch = re.match(filepat, flnm, re.I)
         if ".pdf" in flnm:
-            dest = join(pdfdir, "tn-pk-v{}-{}".format(dk.zfill(2), flnm))
+            dest = join(pdfdir, "{}-v{}-{}".format(fileprefix, dk.zfill(2), flnm))
+            # print("moving {} to {}".format(src, dest))
             shutil.copy(src, dest)
 
         elif mtch:
-            dest = join(textdir, "tn-pk-v{}-t{}.doc".format(dk.zfill(2), mtch.group(1).zfill(2)))
+            dest = join(textdir, "{}-v{}-t{}.doc".format(fileprefix, dk.zfill(2), mtch.group(1).zfill(2)))
+            # print("moving {} to {}".format(src, dest))
             shutil.copy(src, dest)
 
         else:
-            dest = join(miscdir, "tn-pk-v{}-{}".format(dk.zfill(2), flnm))
+            dest = join(miscdir, "{}-v{}-{}".format(fileprefix, dk.zfill(2), flnm))
+            # print("moving {} to {}".format(src, dest))
             shutil.copy(src, dest)
 
 
