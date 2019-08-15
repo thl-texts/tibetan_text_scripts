@@ -1,6 +1,7 @@
 # Ignore any additions to the in and out folders
 in/
 out/
+test/
 env/
 venv/
 .idea/
