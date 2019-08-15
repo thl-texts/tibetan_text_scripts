@@ -142,6 +142,12 @@ if __name__ == "__main__":
     '''
     The main routine that runs the conversion. Is there any reason to document this?
     '''
+    quest = "Running this program will take the .docx files located in the \"in\" folder, \n" \
+            "add THL styles and the metadata table to them, and put the resulting documents \n" \
+            "in the \"out\" folder. Do you want to do this? (y/n) "
+    reply = str(input(quest)).lower().strip()
+    if reply != 'y':
+        exit(0)
     indir = 'in'
     outdir = 'out'
     ct = 0
