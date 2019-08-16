@@ -6,8 +6,7 @@ import re
 import os
 import glob
 import math
-from fuzzywuzzy import fuzz
-from fuzzywuzzy import process
+from fuzzysearch import find_near_matches
 
 
 def read_in_ocr(inpath):
@@ -113,17 +112,22 @@ def do_milestones(file_list, paged_doc, first_pg):
     current_index = 0
     current_vol_pos = 0
     pgnms = list(paged_doc.keys())
+    wereon = False
     for pgkey in pgnms:
         pglines = paged_doc[pgkey]
         for lnnm, ln in enumerate(pglines):
             milestone = "{}.{}".format(int(pgkey), lnnm + 1)
             tmpln = ln.lstrip('༄༅། ')
             ind = find_line_in_doc(tmpln, current_doc, current_index)
+            if wereon:
+                print("milestone: {}\ntmpln: {} \nind: {} \n".format(milestone, tmpln, ind))
+                wereon = False
             if ind == -1:
-                print("{} not found".format(milestone))
+                agh = 0
+                # print("{} not found".format(milestone))
             else:
                 pagepos[ind] = milestone
-                current_index = ind + len(ln) - 1
+                current_index = ind + len(ln)
             if current_index > current_vol_pos + len(current_doc) - 25:
                 break
 
@@ -132,32 +136,40 @@ def do_milestones(file_list, paged_doc, first_pg):
             add_milestones(current_doc_path, current_doc, pagepos)
             current_vol_pos = current_index
             current_doc_num += 1
+            print("{} : {}".format(current_doc_num, len(file_list)))
             if current_doc_num < len(file_list):
                 current_doc_path = file_list[current_doc_num]
+                print(current_doc_path)
                 current_doc = read_in_chunk(current_doc_path)
+                print(len(current_doc))
                 pagepos = {}
+                current_index = 0
+                wereon = True
             else:
                 break
 
 
 def find_line_in_doc(linein, current_doc, current_index):
     pos = -1
+    syllables = linein.split('་')
+    halfway = math.floor(len(syllables) / 2)
+    tmpdoc = current_doc[current_index:]
     # Start at end and slowly shrink search string to 1/2 length until found
-    for n in range(0, math.floor(len(linein) / 2)):
-        tmpln = linein[:n]
-        pos = current_doc.find(tmpln, current_index)
+    for n in range(0, halfway):
+        tmplnfor = '་'.join(syllables[n:])
+        tmplnrev = '་'.join(syllables[:len(syllables) - n])
+        pos = tmpdoc.find(tmplnfor)
+        if pos == -1:
+            pos = tmpdoc.find(tmplnrev, current_index)
+        if pos == -1:
+            res = find_near_matches(tmplnfor, tmpdoc, max_l_dist=1)
+            if res:
+                pos = res[0][0]
         if pos > -1:
             break
 
-    # Do the same kind of truncation from beginning
-    if pos == -1:
-        for n in range(0, math.floor(len(linein) / 2)):
-            tmpln = linein[n:]
-            pos = current_doc.find(tmpln, current_index)
-            if pos > -1:
-                pos += n
-                break
-
+        if pos > -1:
+            pos += current_index
     return pos
 
 

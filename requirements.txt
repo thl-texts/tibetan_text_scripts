@@ -2,3 +2,4 @@ lxml==4.4.0
 python-docx==0.8.10
 fuzzywuzzy==0.17.0
 python-Levenshtein==0.12.0
+fuzzysearch==0.6.2
