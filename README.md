@@ -79,7 +79,9 @@ two global variables of note. `filefilterstr` is the file name prefix for the fi
 assuming they all begin with the same string such as "KAMA". `text_break_string` is the string used to split the chunks
 into texts. This is the universal string that separates two texts in a document. For the KAMA it was '༄༅'. Further 
 modifications will need to be done to break on the 'བཞུགས་སོ།' since the line just before will also need to be included in 
-the subsequent text. This has not yet been implemented.
+the subsequent text. This has not yet been implemented. (Update: This method is problematic creating too many false breaks 
+and/or missing real breaks. Better to change or add a script to break up based on cataloging data once the milestones 
+have been inserted.)
 
 **NOTE**: It is _important_ that the styles be up-to-date. Download the latest Word doc template with THL Styles
 from [this Google Docs link](https://drive.google.com/open?id=1e5BL8fZym-YnbQTyN-qpWDu5nbqqn98i) (It is in the folder
