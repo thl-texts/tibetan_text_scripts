@@ -31,21 +31,27 @@ def read_in_doc(fnm):
     return doc
 
 
-def copy_doc_to_template(infnm, outfnm):
-    '''
+def copy_doc_to_template(infnm, outfnm, include_table=True, do_annots=False, mark_miles=True):
+    """
     Copies unstyled word document paragraphs to a "template" document which is a Word docx with the correct styles
 
-    :param doc: docx.document.Document
-    :param tmpl:
+    :param infnm:
+    :param outfnm:
+    :param include_table:
+    :param do_annots:
+    :param mark_miles:
     :return: docx.document.Document
-    '''
+    """
+
     indoc = read_in_doc(infnm)
-    outdoc = get_template_doc(outfnm)
+    outdoc = get_template_doc(outfnm, include_table)
     pstyl = get_style(outdoc)
     for ind, p in enumerate(indoc.paragraphs):
         outpara = outdoc.add_paragraph(p.text, pstyl)
-        do_annotations(outpara, outdoc)
-
+        if do_annots:
+            do_annotations(outpara, outdoc)
+        if mark_miles:
+            mark_milestones(outpara, outdoc)
     set_tib_font(outdoc)
     outdoc.save(outfnm)
     return outdoc
@@ -81,14 +87,36 @@ def do_annotations(p, mydoc):
                 p.add_run(runtxt)
 
 
-def get_template_doc(fnm):
+def mark_milestones(p, mydoc):
+    pgstyl = get_style(mydoc, 'Page Number Print Edition')
+    lnstyl = get_style(mydoc, 'Line Number Print')
+    parastyl = get_style(mydoc, 'Default Character Font')
+    ptxt = p.text
+    pts = ptxt.split('[')
+    if len(pts) > 1:
+        p.clear()
+        for rn in pts:
+            if ']' in rn:
+                rnpts = rn.split(']')
+                rn = '[' + rnpts[0] + ']'
+                sty = lnstyl if '.' in rn else pgstyl
+                p.add_run(rn, sty)
+                if len(rnpts) > 1:
+                    p.add_run(rnpts[1])
+            else:
+                p.add_run(rn)
+
+
+def get_template_doc(fnm, with_table=True):
     '''
     Get the template document that has all the styles in it
     :param fnm:
+    :param with_table:
     :return: docx.document.Document
     '''
     folder = 'resources'
-    tplnm = 'tibtext-styled-tpl.docx'
+    tplnm = 'tibtext-styled-tpl.docx' if with_table else 'tibtext-styles-only.docx'
+    # print("Template: {}".format(tplnm))
     tplpath = path.join(folder, tplnm)
     doc = Document(tplpath)
     doc.save(fnm)
@@ -140,22 +168,32 @@ def set_tib_font(doc):
 
 if __name__ == "__main__":
     '''
-    The main routine that runs the conversion. Is there any reason to document this?
+    The main routine that runs the conversion. 
     '''
     quest = "Running this program will take the .docx files located in the \"in\" folder, \n" \
-            "add THL styles and the metadata table to them, and put the resulting documents \n" \
+            "add THL styles, and put the resulting documents " \
             "in the \"out\" folder. Do you want to do this? (y/n) "
     reply = str(input(quest)).lower().strip()
     if reply != 'y':
         exit(0)
+
+    incltbl = input("Do you want to add the metadata table and basic headers to them? (y/n) ")
+    incltbl = incltbl.lower()
+    incltbl = True if incltbl in ('', 'y', 'yes') else False
+    doannots = input("Do you want to convert << >> to annotation style? (y/n) ")
+    doannots = doannots.lower()
+    doannots = True if doannots in ('', 'y', 'yes') else False
+    markmiles = input("Do you want to add styles to milestones written, e.g. [2.3] ? (y/n) ")
+    markmiles = markmiles.lower()
+    markmiles = True if markmiles in ('', 'y', 'yes') else False
     indir = 'in'
     outdir = 'out'
     ct = 0
-    for fnm in [f for f in listdir(indir) if not f.startswith('.')]:
+    for fnm in [f for f in listdir(indir) if f.endswith('.docx')]:
         print("Processing {}".format(fnm))
         inf = path.join(indir, fnm)
         outf = path.join(outdir, fnm)
-        newdoc = copy_doc_to_template(inf, outf)
+        newdoc = copy_doc_to_template(inf, outf, incltbl, doannots, markmiles)
         ct += 1
 
     print("{} documents done!".format(ct))

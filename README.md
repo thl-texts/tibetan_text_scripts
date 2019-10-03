@@ -1,13 +1,19 @@
-# Sambhota Conversion Scripts
-Various scripts for Windows 10 and Mac OS X to convert files with Sambhota fonts to Unicode Tibetan.
+# Tibetan Text Scripts
+Various scripts manipulating Tibetan Texts, including scripts to:
+
+1. Convert Word Files in Sambhota fonts to Unicode (Windows and Mac)
+2. Insert milestones in Sambhota converted files based on OCR
+2. Add THL Styles to a Word Doc with options to apply styles to annotations and/or milestons
+3. Convert between txt, rtf, and docx files (on Mac)
+4. Split a volume into texts
 
 This was developed originally for the Peltsek Kama files that were in Sambhota font.
 
 * **Developer:** Than Grove
 * **Creation Date:** July 31, 2019
 
-## Set Up 
-As detailed in the next section, this conversion method uses both a Mac OS 10 and Windows 10 environment. The main 
+## Installation 
+As detailed in the next section, the Sambhota conversion method uses both a Mac OS 10 and Windows 10 environment. The main 
 conversion script is a Python script run on the Mac. It was written for Python 3 and only uses two additional packages:
 
 * lxml
@@ -25,7 +31,7 @@ installed, look to [its installation page](https://docs.brew.sh/Installation)). 
 
 *Note:* To get out of the virtual environment, either close the terminal or type `deactivate`
 
-## Overall Process
+## Overall Process for Conversion of Sambhota Files
 
 The conversion process is a multi-stepped process that requires both a Mac and a Windows machine to proceed 
 most efficiently. I did it by using Virtual Box to create a virtual Windows 10 machine on my Mac and shared 
@@ -53,6 +59,14 @@ but with the text between the « and » marked up as Annotations style. A metada
 of the document.
 
 The document template used is in the `resources` folder. It is `tibtext-styled-tpl.docx`.
+
+## Adding THL Styles to Texts
+The script add_styles2docx.py will take all the .docx files in the /in folder and add the THL styles to them, producing 
+new documents in the out folder. When this script is run, it gives you three options. You can choose 1. whether or not 
+to add the metadata table and basic headers to the resulting Word doc (this is primarily for individual texts not volumes), 
+2. whether or not to convert text surrounded by << and >> into annotations by removing those markers and applying the 
+Word style, and 3. whether or not to apply the styles to the page and line milestones in the doc with the format 
+"[23.4]".
 
 ## Spliting into Texts
 Sometimes the Sambhota texts received are volumes or volume "chunks" that need to be broken up into individual texts. 

@@ -1,3 +1,9 @@
+'''
+Split a volume file into individual texts based on a text start delimiter as defined in the global
+variable `text_break_string`. Not ideal. Better to use in combination with milestones and a catalog
+
+'''
+
 from os import listdir, path
 from docx import Document
 from docx.shared import Pt

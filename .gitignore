@@ -1,7 +1,7 @@
 # Ignore any additions to the in and out folders
-in/
-out/
+resources/ocr/
 test/
 env/
 venv/
+workspace/
 .idea/
