@@ -7,7 +7,10 @@ Various scripts manipulating Tibetan Texts, including scripts to:
 3. Convert between txt, rtf, and docx files (on Mac)
 4. Split a volume into texts
 
-This was developed originally for the Peltsek Kama files that were in Sambhota font.
+This was developed originally as Sambhota Conversion Scripts for the Peltsek Kama files that were in Sambhota font, but 
+in the process of developing another set of scripts InsertMilestones in the repo by the same name at 
+https://github.com/thl-texts/insert-milestones.git, it was decided to merge those scripts here and create a general 
+Tibetan Text Scripts repo.
 
 * **Developer:** Than Grove
 * **Creation Date:** July 31, 2019
