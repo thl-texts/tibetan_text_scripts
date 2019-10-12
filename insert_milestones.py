@@ -9,13 +9,15 @@ from tibtexts.ocrvol import OCRVol
 from tibtexts.univol import UniVol
 from fuzzysearch import find_near_matches
 from os import getcwd, listdir, remove, system
-from os.path import join
+from os.path import join, exists
 import datetime
 import logging
+import argparse
 
-debugon = True
+debugon = False
 unidocs = []
 avg_ln_len = 0
+pgs_to_skip = list()
 
 def set_unidocs(pth):
     '''
@@ -156,39 +158,14 @@ def clean_ocr_line(txt):
     return txt
 
 
-if __name__ == "__main__":
-
-    # Load the OCR Volume used to determine page and line breaks into the custom OCRVol class
-    volnum = input("Enter volume number: ")
-    if not volnum.isnumeric():
-        print("{} is not a number. Bye!".format(volnum))
-        exit(0)
-    volnum = str(int(volnum)).zfill(3)
-    volflnm = 'kama-ocr-vol-{}'.format(volnum)
-    startsat = input("Enter scan page the volume starts at: ")
-    # startsat = 4    # This is the ocr page number that should be labeled as milestone 1
-    if not startsat.isnumeric():
-        print("{} is not a number. Bye!".format(startsat))
-        exit(0)
-    else:
-        startsat = int(startsat)
-    # OCR usually seem to start on pg 7, vol 1 starts at 167
-    skippgs = list()  # Skippgs are pages in the OCR vol to be skipped without incrementing the milestone number
-    # for vol 1 use range(171, 177) vols 2 & 3 skip nothing
-
-    # Set up the logging
-    currdt = datetime.datetime.now()
-    currdt = currdt.strftime("%Y-%m-%d_%H-%M")
-    logging.basicConfig(filename='workspace/logs/{}-{}.log'.format(volflnm, currdt), filemode='w',
-                        format='(%(levelname)s) %(message)s', level=logging.DEBUG)
-
-    vol = OCRVol('resources/ocr/{}.txt'.format(volflnm), startat=startsat, skips=skippgs)
+def do_insertions(inpath, outpath, volflnm, startsat):
+    global avg_ln_len, unidocs, pgs_to_skip, debugon
+    vol = OCRVol('resources/ocr/{}.txt'.format(volflnm), startat=startsat, skips=pgs_to_skip)
     avg_ln_len = vol.avg_line_length
     logging.info("Vol has {} lines and is {} characters long".format(vol.line_count, vol.length))
     logging.info("Vol average line length: {}".format(avg_ln_len))
 
     # Load the Unicode document into which the milestones will be inserted into the custom UniVol class
-    inpath = join(getcwd(), 'workspace/in')
     set_unidocs(inpath)
     unidoc = get_next_unidoc()
     logging.info("Doing file: {}".format(unidoc.filename))
@@ -211,7 +188,8 @@ if __name__ == "__main__":
             logging.debug("\n===========================================\n")
             logging.debug("Milestone: {} (Curr pg: {})".format(ms, vol.get_current_page()))
 
-        ind = find_insertion_point(unidoc, lnbeg, skipped)  # Call function to find the insertion point in the unidoc for ms
+        ind = find_insertion_point(unidoc, lnbeg,
+                                   skipped)  # Call function to find the insertion point in the unidoc for ms
 
         if ind is False and unidoc.get_length() - unidoc.index < 200 and len(unidocs) > 0:
             unidoc = get_next_unidoc()
@@ -245,17 +223,17 @@ if __name__ == "__main__":
             if len(unidocs) > 0:
                 # If there are more documents, open the next one (popping it off the top of the list)
                 unidoc = get_next_unidoc()
-                logging.info("\n**********************\nDoing file: {}\n**********************\n".format(unidoc.filename))
+                logging.info(
+                    "\n**********************\nDoing file: {}\n**********************\n".format(unidoc.filename))
             elif vol.get_line_num(True) < vol.line_count:
                 # If no more chunk docs left, but still lines in the OCR volume, then notify
                 logging.warning("Reached end of unicode Docs but volume at line {} of {}".format(vol.get_line_num(True),
-                                                                                       vol.line_count))
+                                                                                                 vol.line_count))
                 break
 
     if isinstance(unidoc, UniVol) and not unidoc.is_written():
         print("\nWriting last file")
-        unidoc.writedoc('workspace/out')
-
+        unidoc.writedoc(outpath)
 
     with open('workspace/logs/{}-missed-ms.log'.format(volflnm), 'w') as msout:
         msout.write("****** {} Milestones not inserted for {} ******\n".format(len(missed_ms), volflnm))
@@ -265,5 +243,60 @@ if __name__ == "__main__":
             msout.write("\n\n****** {} Lines Skipped ******\n".format(len(skipped_lines)))
             for skl in skipped_lines:
                 msout.write("{}\n".format(skl))
+
+
+parser = argparse.ArgumentParser(description='Insert Milestones from OCR in Unicode Docs')
+parser.add_argument('-v', '--vol', required=True,
+                    help='The Volume Number')
+parser.add_argument('-s', '--start', default='1',
+                    help='The scan page the volume starts at')
+parser.add_argument('-i', '--in', default='workspace/in',
+                    help='The In Directory with the files')
+parser.add_argument('-o', '--out', default='workspace/out',
+                    help='The Out Directory with the files')
+parser.add_argument('-d', '--debug', action='store_true',
+                    help='Print debugging information')
+args = parser.parse_args()
+
+
+if __name__ == "__main__":
+    kwargs = vars(args)
+    volnum = kwargs['vol']
+    if not volnum.isnumeric():
+        print("{} is not a number. Bye!".format(volnum))
+        exit(0)
+    volnum = str(int(volnum)).zfill(3)
+    volfile = 'kama-ocr-vol-{}'.format(volnum)
+
+    startpg = kwargs['start'] # startsat = 4    # This is the ocr page number that should be labeled as milestone 1
+    if not startpg.isnumeric():
+        print("{} is not a number. Bye!".format(startpg))
+        exit(0)
+    else:
+        startpg = int(startpg)
+
+    indir = kwargs['in']
+    if not exists(indir):
+        print("The in directory {} does not exist!".format(indir))
+        exit(0)
+
+    outdir = kwargs['out']
+    if not exists(outdir):
+        print("The out directory {} does not exist!".format(outdir))
+        exit(0)
+
+    debugon = kwargs['debug']
+    # OCR usually seem to start on pg 7, vol 1 starts at 167
+    pgs_to_skip = list()  # pgs_to_skip are pages in the OCR vol to be skipped without incrementing the milestone number
+    # for vol 1 use range(171, 177) vols 2 & 3 skip nothing
+
+    # Set up the logging
+    currdt = datetime.datetime.now()
+    currdt = currdt.strftime("%Y-%m-%d_%H-%M")
+    logging.basicConfig(filename='workspace/logs/{}-{}.log'.format(volfile, currdt), filemode='w',
+                        format='(%(levelname)s) %(message)s', level=logging.DEBUG)
+
+    do_insertions(indir, outdir, volfile, startpg)
+
     print("Done!")
 
