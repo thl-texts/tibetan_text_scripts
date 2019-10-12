@@ -8,8 +8,9 @@ Date: 9/5/2019
 from tibtexts.ocrvol import OCRVol
 from tibtexts.univol import UniVol
 from fuzzysearch import find_near_matches
-from os import getcwd, listdir, remove, system
+from os import getcwd, listdir, remove, system, mkdir
 from os.path import join, exists
+import shutil
 import datetime
 import logging
 import argparse
@@ -18,6 +19,7 @@ debugon = False
 unidocs = []
 avg_ln_len = 0
 pgs_to_skip = list()
+
 
 def set_unidocs(pth):
     '''
@@ -28,31 +30,28 @@ def set_unidocs(pth):
     '''
     global unidocs
     isok = False
-    for f in listdir(inpath):
+    bakfld = join(pth, 'bak')
+    for f in listdir(pth):
         if not f.startswith('.'):
             if f.endswith('.docx'):
-                if not isok:
-                    answer = input("Some of the files in the In folder are Word docs. May I convert them to text files? "
-                                   "(The Word docs in the In folder will be replaced): y/n? ")
-                    if answer == 'y' or answer == 'yes':
-                        isok = True
-                    else:
-                        print("Aborting Milestone insertion!")
-                        exit(0)
+                if not exists(bakfld):
+                    mkdir(bakfld)
                 filepth = join(pth, f)
                 cmd = 'textutil -convert txt -output "{}" "{}"'.format(filepth.replace('.docx', '.txt'), filepth)
                 system(cmd)
-                remove(filepth)
-    fileslist = [f for f in listdir(inpath) if f.endswith('.txt')]
+                shutil.move(filepth, join(bakfld, f))
+    fileslist = [f for f in listdir(pth) if f.endswith('.txt')]
     fileslist.sort()
-    unidocs = [join(inpath, f) for f in fileslist]
+    unidocs = [join(pth, f) for f in fileslist]
 
 
 def get_next_unidoc():
     global unidocs, avg_ln_len
     if len(unidocs) == 0:
         return None
-    return UniVol(unidocs.pop(0), vol.avg_line_length)
+    udoc = unidocs.pop(0)
+    print("\nDoing {}".format(udoc))
+    return UniVol(udoc, avg_ln_len)
 
 
 def find_insertion_point(doc, linebeg, lines_skipped):
@@ -69,18 +68,20 @@ def find_insertion_point(doc, linebeg, lines_skipped):
         The index in the current chunk where the milestone should be inserted. The index of the beginning of the chunk
         is added later to get the absolute index where the mileston is to be inserted.
     '''
+    global debugon
     ldist = 5
     chunk = doc.get_search_chunk(skipped=lines_skipped)
     tries = 0
     insind = False
     while tries < 3:
         tries += 1
-
-        logging.debug("Try {} Looking for: {}".format(tries, linebeg))
-        logging.debug("In: {} (ind: {})".format(chunk, doc.index))
+        if debugon:
+            logging.debug("Try {} Looking for: {}".format(tries, linebeg))
+            logging.debug("In: {} (ind: {})".format(chunk, doc.index))
 
         mtc = find_near_matches(linebeg, chunk, max_l_dist=ldist)  # Call fuzzy search to find the match point
-        logging.debug("match: {}".format(mtc))
+        if debugon:
+            logging.debug("match: {}".format(mtc))
         if len(mtc) == 0:
             # If there's no match, call the narrow_search function to change the parameters
             linebeg, chunk, ldist = narrow_search(linebeg, chunk, ldist, doc, tries)
@@ -192,6 +193,7 @@ def do_insertions(inpath, outpath, volflnm, startsat):
                                    skipped)  # Call function to find the insertion point in the unidoc for ms
 
         if ind is False and unidoc.get_length() - unidoc.index < 200 and len(unidocs) > 0:
+            unidoc.writedoc(outpath)
             unidoc = get_next_unidoc()
             logging.info("\n**********************\nDoing file: {}\n**********************\n".format(unidoc.filename))
             ind = find_insertion_point(unidoc, lnbeg, skipped)
@@ -211,15 +213,14 @@ def do_insertions(inpath, outpath, volflnm, startsat):
             logging.debug("Line beg: {}".format(lnbeg))
             lbln = len(lnbeg)
             logging.debug("Text chunk: {}#$#$#$#{}".format(unidoc.text[ind - lbln:ind], unidoc.text[ind:ind + lbln]))
-        print("\rInserting: {}                                             ".format(ms), end='')
+        print("\rInserting: {}     ".format(ms), end='')
         unidoc.insert_milestone(ms, ind, vol.get_line_length())
         skipped = 0  # Reset skipped lines
 
         # Test if end of unidoc. Added "+ 25" for vol. 2 but didn't have it for vol. 1
-        if len(unidoc.text) - unidoc.index < vol.avg_line_length - 25:
+        if len(unidoc.text) - unidoc.index < vol.avg_line_length:
             # If we are at the end of a chunk document ...
-            print("")
-            unidoc.writedoc('workspace/out')  # Write it and
+            unidoc.writedoc(outpath)  # Write it and
             if len(unidocs) > 0:
                 # If there are more documents, open the next one (popping it off the top of the list)
                 unidoc = get_next_unidoc()
@@ -248,7 +249,7 @@ def do_insertions(inpath, outpath, volflnm, startsat):
 parser = argparse.ArgumentParser(description='Insert Milestones from OCR in Unicode Docs')
 parser.add_argument('-v', '--vol', required=True,
                     help='The Volume Number')
-parser.add_argument('-s', '--start', default='1',
+parser.add_argument('-s', '--start', required=True,
                     help='The scan page the volume starts at')
 parser.add_argument('-i', '--in', default='workspace/in',
                     help='The In Directory with the files')
@@ -286,6 +287,7 @@ if __name__ == "__main__":
         exit(0)
 
     debugon = kwargs['debug']
+
     # OCR usually seem to start on pg 7, vol 1 starts at 167
     pgs_to_skip = list()  # pgs_to_skip are pages in the OCR vol to be skipped without incrementing the milestone number
     # for vol 1 use range(171, 177) vols 2 & 3 skip nothing
