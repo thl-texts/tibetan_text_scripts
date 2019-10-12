@@ -1,6 +1,47 @@
-from os import listdir, path
+from os import listdir, mkdir, path, system, getcwd, chdir, remove
+import shutil
 from docx import Document
 from docx.shared import Pt
+import argparse
+
+
+def summarize_args(kws):
+    print("----------- Parameters   ---------")
+    print("In directory: {}".format(kws['in']))
+    print("Out directory: {}".format(kws['out']))
+    print("Options:")
+    print("\tAdd metadata table: {}".format("yes" if kws['table'] else "no"))
+    print("\tDo annotations: {}".format("yes" if kws['annotations'] else "no"))
+    print("\tDo Milestones: {}".format("yes" if kws['milestones'] else "no"))
+
+
+def stardardize_in_files(infld):
+    '''
+    Standardize the files in the in folder converting them to docx
+
+    :param infld:
+    :return:
+    '''
+    bakfld = path.join(infld, 'bak')
+    if not path.exists(bakfld):
+        mkdir(bakfld)
+    cwd = getcwd()
+    for f in listdir(infld):
+        if f.endswith('.txt') or f.endswith('.rtf'):
+            newf = f.replace('.txt', '-temp.docx').replace('.rtf', '-temp.docx')
+            chdir(infld)
+            system('textutil -convert docx -output "{}" "{}"'.format(newf, f))
+            chdir(cwd)
+            shutil.move(path.join(infld, f), path.join(bakfld, f))
+        elif f.endswith('.docx') and not f.endswith('-temp.docx'):
+            newf = f.replace('.docx', '-temp.docx')
+            shutil.move(path.join(infld, f), path.join(infld, newf))
+
+
+def clean_out_folder(outd):
+    for f in listdir(outd):
+        if f.endswith('-temp.docx'):
+            remove(path.join(outd, f))
 
 
 def read_in_text(dir, fnm):
@@ -90,7 +131,7 @@ def do_annotations(p, mydoc):
 def mark_milestones(p, mydoc):
     pgstyl = get_style(mydoc, 'Page Number Print Edition')
     lnstyl = get_style(mydoc, 'Line Number Print')
-    parastyl = get_style(mydoc, 'Default Character Font')
+    # parastyl = get_style(mydoc, 'Default Character Font')
     ptxt = p.text
     pts = ptxt.split('[')
     if len(pts) > 1:
@@ -115,10 +156,17 @@ def get_template_doc(fnm, with_table=True):
     :return: docx.document.Document
     '''
     folder = 'resources'
-    tplnm = 'tibtext-styled-tpl.docx' if with_table else 'tibtext-styles-only.docx'
+    tplnm = 'tibtext-styled-tpl.docx'
     # print("Template: {}".format(tplnm))
     tplpath = path.join(folder, tplnm)
     doc = Document(tplpath)
+    parastyl = get_style(doc)
+    if not with_table:
+        for tbl in doc.tables:
+            tbl._element.getparent().remove(tbl._element)
+        for p in doc.paragraphs:
+            p._element.getparent().remove(p._element)
+
     doc.save(fnm)
     return doc
 
@@ -166,35 +214,51 @@ def set_tib_font(doc):
             r.font.size = Pt(16)
 
 
-if __name__ == "__main__":
-    '''
-    The main routine that runs the conversion. 
-    '''
-    quest = "Running this program will take the .docx files located in the \"in\" folder, \n" \
-            "add THL styles, and put the resulting documents " \
-            "in the \"out\" folder. Do you want to do this? (y/n) "
-    reply = str(input(quest)).lower().strip()
-    if reply != 'y':
-        exit(0)
-
-    incltbl = input("Do you want to add the metadata table and basic headers to them? (y/n) ")
-    incltbl = incltbl.lower()
-    incltbl = True if incltbl in ('', 'y', 'yes') else False
-    doannots = input("Do you want to convert << >> to annotation style? (y/n) ")
-    doannots = doannots.lower()
-    doannots = True if doannots in ('', 'y', 'yes') else False
-    markmiles = input("Do you want to add styles to milestones written, e.g. [2.3] ? (y/n) ")
-    markmiles = markmiles.lower()
-    markmiles = True if markmiles in ('', 'y', 'yes') else False
-    indir = 'in'
-    outdir = 'out'
+def convert_files(ind, outd, table, annots, milestones):
     ct = 0
-    for fnm in [f for f in listdir(indir) if f.endswith('.docx')]:
+    for fnm in [f for f in listdir(ind) if f.endswith('.docx')]:
         print("Processing {}".format(fnm))
-        inf = path.join(indir, fnm)
-        outf = path.join(outdir, fnm)
-        newdoc = copy_doc_to_template(inf, outf, incltbl, doannots, markmiles)
+        inf = path.join(ind, fnm)
+        outf = path.join(outd, fnm.replace('-temp', ''))
+        newdoc = copy_doc_to_template(inf, outf, table, annots, milestones)
         ct += 1
 
     print("{} documents done!".format(ct))
 
+
+parser = argparse.ArgumentParser(description='Add convert text files to Word docs with THL Styles')
+parser.add_argument('-i', '--in', required=True,
+                    help='Where are the documents to convert?')
+parser.add_argument('-o', '--out',
+                    help='Where to save the converted documents')
+parser.add_argument('-t', '--table', action='store_true',
+                    help='Add metadata tables to documents')
+parser.add_argument('-a', '--annotations', action='store_true',
+                    help='Convert << and >> into annotation style')
+parser.add_argument('-m', '--milestones', action='store_true',
+                    help='Add styles to page and line milestones')
+args = parser.parse_args()
+
+if __name__ == "__main__":
+    '''
+    The main routine that runs the conversion. 
+    '''
+    kwargs = vars(args)
+    if not kwargs['out']:
+        kwargs['out'] = kwargs['in']
+    indir = kwargs['in']
+    if not path.isdir(indir):
+        print("The In directory setting, {}, is not a directory".format(indir))
+        exit(0)
+    outdir = kwargs['out']
+    if not path.isdir(outdir):
+        print("The Out directory setting, {}, is not a directory".format(outdir))
+        exit(0)
+
+    summarize_args(kwargs)
+    stardardize_in_files(indir)
+    print("Files converted to docx!")
+    convert_files(indir, outdir, kwargs['table'], kwargs['annotations'], kwargs['milestones'])
+    print("Removing temp files ...")
+    clean_out_folder(outdir)
+    print("Done")

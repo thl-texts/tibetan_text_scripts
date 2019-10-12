@@ -11,7 +11,6 @@ from fuzzysearch import find_near_matches
 from os import getcwd, listdir, remove, system
 from os.path import join
 import datetime
-from math import ceil
 import logging
 
 debugon = True
