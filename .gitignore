@@ -5,3 +5,5 @@ env/
 venv/
 workspace/
 .idea/
+.log
+
