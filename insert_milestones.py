@@ -124,7 +124,7 @@ def narrow_search(srchtxt, chunk, ldist, udoc, tries):
     if tries == 1:
         # First double the chunk
         chunk = udoc.get_search_chunk(2)
-        print("Narrowing search....", end='')   # Only print it the first time. Other times, it's already there.
+        print(" Narrowing search....           ", end='')   # Only print it the first time. Other times, it's already there.
 
     elif tries == 2:
         # Second try upping ldist from 5 to 8
@@ -161,6 +161,8 @@ def clean_ocr_line(txt):
 
 def do_insertions(inpath, outpath, volflnm, startsat):
     global avg_ln_len, unidocs, pgs_to_skip, debugon
+    msout = open('workspace/logs/{}-missed-ms.log'.format(volflnm), 'w')
+    msout.write("Milestones Missed:\n")
     vol = OCRVol('resources/ocr/{}.txt'.format(volflnm), startat=startsat, skips=pgs_to_skip)
     avg_ln_len = vol.avg_line_length
     logging.info("Vol has {} lines and is {} characters long".format(vol.line_count, vol.length))
@@ -202,8 +204,10 @@ def do_insertions(inpath, outpath, volflnm, startsat):
             # If not found, do not insert milestone.
             logging.warning("!!!!!!! Milestone {} not found !!!!!!!!!!".format(ms))
             logging.warning("Current index: {}, Full Length: {}".format(unidoc.index, len(unidoc.text)))
-            print("\rMilestone {} not found!                                       ".format(ms), end='')
-            missed_ms.append(ms.replace('][', '/').strip('[]'))
+            print("\rMilestone {} not found!".format(ms), end='')
+            missedstr = ms.replace('][', '/').strip('[]')
+            missed_ms.append(missedstr)
+            msout.write("{}\n".format(missedstr))
             skipped += 1
             continue
 
@@ -213,7 +217,8 @@ def do_insertions(inpath, outpath, volflnm, startsat):
             logging.debug("Line beg: {}".format(lnbeg))
             lbln = len(lnbeg)
             logging.debug("Text chunk: {}#$#$#$#{}".format(unidoc.text[ind - lbln:ind], unidoc.text[ind:ind + lbln]))
-        print("\rInserting: {}     ".format(ms), end='')
+        print("\r" + " " * 160, end='')   # Erase previous message
+        print("\rInserting: {} ".format(ms), end='')
         unidoc.insert_milestone(ms, ind, vol.get_line_length())
         skipped = 0  # Reset skipped lines
 
@@ -236,14 +241,11 @@ def do_insertions(inpath, outpath, volflnm, startsat):
         print("\nWriting last file")
         unidoc.writedoc(outpath)
 
-    with open('workspace/logs/{}-missed-ms.log'.format(volflnm), 'w') as msout:
-        msout.write("****** {} Milestones not inserted for {} ******\n".format(len(missed_ms), volflnm))
-        for mms in missed_ms:
-            msout.write("{}\n".format(mms))
-        if len(skipped_lines) > 0:
-            msout.write("\n\n****** {} Lines Skipped ******\n".format(len(skipped_lines)))
-            for skl in skipped_lines:
-                msout.write("{}\n".format(skl))
+    msout.write("****** {} Milestones not inserted for {} ******\n".format(len(missed_ms), volflnm))
+    if len(skipped_lines) > 0:
+        msout.write("\n\n****** {} Lines Skipped ******\n".format(len(skipped_lines)))
+        for skl in skipped_lines:
+            msout.write("{}\n".format(skl))
 
 
 parser = argparse.ArgumentParser(description='Insert Milestones from OCR in Unicode Docs')

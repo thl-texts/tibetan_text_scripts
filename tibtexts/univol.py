@@ -81,7 +81,7 @@ class UniVol:
         return self.written
 
     def writedoc(self, outdir):
-        print("Document {} written to {}".format(self.outname, outdir))
+        print(".... Done!\nDocument {} written to {}".format(self.outname, outdir))
         with open(os.path.join(outdir, self.outname), 'w') as dout:
             dout.write(self.text)
             self.written = True

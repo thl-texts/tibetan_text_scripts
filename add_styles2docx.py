@@ -90,62 +90,83 @@ def copy_doc_to_template(infnm, outfnm, include_table=True, do_annots=False, mar
     for ind, p in enumerate(indoc.paragraphs):
         outpara = outdoc.add_paragraph(p.text, pstyl)
         if do_annots:
-            do_annotations(outpara, outdoc)
+            anntstyl = get_style(outdoc, "Annotations")
+            do_annotations(outpara, anntstyl)
         if mark_miles:
-            mark_milestones(outpara, outdoc)
+            pgst = get_style(outdoc, 'Page Number Print Edition')
+            lnst = get_style(outdoc, 'Line Number Print')
+            mark_milestones(outpara, pgst, lnst)
     set_tib_font(outdoc)
     outdoc.save(outfnm)
+    print("Saved to {}".format(outfnm))
     return outdoc
 
 
-def do_annotations(p, mydoc):
+def do_annotations(p, annotstyl):
     '''
     Finds text betwee « and » and applies the Annotations style
 
     :param p:
-    :param mydoc:
+    :param annotstyl:
     :return: Null (manipulation done by reference)
     '''
-    annotstyl = get_style(mydoc, "Annotations")
-    # ptxt = p.text
-    # for dolpopa
-    ptxt = p.text.replace("«", "").replace("»", "")  # Ignore the smaller font
-    pts = ptxt.split("<")  # for dolpopa was «
-    if len(pts) > 1:
-        p.clear()
-        p.add_run(pts[0])
-        for rn in pts[1:]:
-            rnpts = rn.split(">")  # for dolpopa was »
-            if len(rnpts) == 1:
-                print("No closing annotation marker")
-                p.add_run(rn, annotstyl)
-            else:
-                p.add_run(rnpts[0], annotstyl)
-                runtxt = rnpts[1]
-                if len(rnpts) > 2:
-                    print("more than two closing annotation markers!")
-                    runtxt = ''.join(rnpts[1:])
-                p.add_run(runtxt)
+
+    print("\tApplying styles to annotations!")
+
+    # Other option for annot_open and _close: < >
+    annot_open = '«'
+    annot_close = '»'
+    newruns = []
+    for rn in p.runs:
+        rtxt = rn.text
+        pts = rtxt.split(annot_open)
+        if len(pts) > 1:
+            newruns.append((pts[0], ''))
+            for subrn in pts[1:]:
+                rnpts = subrn.split(annot_close)
+                if len(rnpts) == 1:
+                    print("No closing annotation marker")
+                    newruns.append((subrn, annotstyl))
+                else:
+                    newruns.append((rnpts[0], annotstyl))
+                    runtxt = rnpts[1]
+                    if len(rnpts) > 2:
+                        print("more than two closing annotation markers!")
+                        runtxt = ''.join(rnpts[1:])
+                    newruns.append((runtxt, ''))
+        else:
+            newruns.append((rn.text, rn.style))
+
+    p.clear()
+    for rdata in newruns:
+        p.add_run(rdata[0], rdata[1])
 
 
-def mark_milestones(p, mydoc):
-    pgstyl = get_style(mydoc, 'Page Number Print Edition')
-    lnstyl = get_style(mydoc, 'Line Number Print')
-    # parastyl = get_style(mydoc, 'Default Character Font')
-    ptxt = p.text
-    pts = ptxt.split('[')
-    if len(pts) > 1:
-        p.clear()
-        for rn in pts:
-            if ']' in rn:
-                rnpts = rn.split(']')
-                rn = '[' + rnpts[0] + ']'
-                sty = lnstyl if '.' in rn else pgstyl
-                p.add_run(rn, sty)
-                if len(rnpts) > 1:
-                    p.add_run(rnpts[1])
-            else:
-                p.add_run(rn)
+def mark_milestones(p, pgstyl, lnstyl):
+    print("\tApplying styles to milestones!")
+    # Iterate through runs in paragraph
+    newruns = []
+    for rn in p.runs:
+        currsty = rn.style      # get run's current style
+        rntxt = rn.text         # get run text
+        pts = rntxt.split('[')  # split on milestone delimiter [
+        if len(pts) > 1:        # if there are more than one parts, it has a bracket/milestone in it
+            for msrn in pts:    # iterate through the parts from splitting on [
+                if ']' in msrn:                                 # if the part has a close bracket ], then ...
+                    rnpts = msrn.split(']')                     # split it on the ]
+                    newms = '[' + rnpts[0] + ']'                # rebuild the milestone string
+                    sty = lnstyl if '.' in newms else pgstyl    # choose the style based on whether there is a "."
+                    newruns.append((newms, sty))                   # add the milestone with the style
+                    if len(rnpts) > 1:                          # if there's another part
+                        newruns.append((rnpts[1], currsty))           # add it back with the run's original style
+                else:
+                    newruns.append((msrn, currsty))  # Otherwise no milestone in this part, add back with style
+        else:
+            newruns.append((rn.text, rn.style))
+
+    p.clear()
+    for rdata in newruns:
+        p.add_run(rdata[0], rdata[1])
 
 
 def get_template_doc(fnm, with_table=True):
@@ -220,7 +241,7 @@ def convert_files(ind, outd, table, annots, milestones):
         print("Processing {}".format(fnm))
         inf = path.join(ind, fnm)
         outf = path.join(outd, fnm.replace('-temp', ''))
-        newdoc = copy_doc_to_template(inf, outf, table, annots, milestones)
+        copy_doc_to_template(inf, outf, table, annots, milestones)
         ct += 1
 
     print("{} documents done!".format(ct))
