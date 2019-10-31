@@ -248,7 +248,7 @@ def convert_files(ind, outd, table, annots, milestones):
 
 
 parser = argparse.ArgumentParser(description='Add convert text files to Word docs with THL Styles')
-parser.add_argument('-i', '--in', required=True,
+parser.add_argument('-i', '--in', default='workspace/out',
                     help='Where are the documents to convert?')
 parser.add_argument('-o', '--out',
                     help='Where to save the converted documents')
