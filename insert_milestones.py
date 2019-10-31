@@ -83,8 +83,8 @@ def find_insertion_point(doc, linebeg, lines_skipped):
         if debugon:
             logging.debug("match: {}".format(mtc))
         if len(mtc) == 0:
-            # If there's no match, call the narrow_search function to change the parameters
-            linebeg, chunk, ldist = narrow_search(linebeg, chunk, ldist, doc, tries)
+            # If there's no match, call the adjust_search function to change the parameters
+            linebeg, chunk, ldist = adjust_search(linebeg, chunk, ldist, doc, tries)
         else:
             # If there is a match use the start point of the first match for this
             # TODO: Check that the first match is always the one with the list l_dist or is it the first
@@ -101,9 +101,9 @@ def find_insertion_point(doc, linebeg, lines_skipped):
     return insind
 
 
-def narrow_search(srchtxt, chunk, ldist, udoc, tries):
+def adjust_search(srchtxt, chunk, ldist, udoc, tries):
     '''
-    Attempt different ways to narrow (or generalize) the search to find the hit for the line break
+    Attempt different ways to adjust the search to find the hit for the line break
     Need to achieve 95+% accuracy.
     :param srchtxt: str
         The line beginning fragment from the OCR vol we are looking for
@@ -161,8 +161,9 @@ def clean_ocr_line(txt):
 
 def do_insertions(inpath, outpath, volflnm, startsat):
     global avg_ln_len, unidocs, pgs_to_skip, debugon
-    msout = open('workspace/logs/{}-missed-ms.log'.format(volflnm), 'w')
-    msout.write("Milestones Missed:\n")
+    msflnm = 'workspace/logs/{}-missed-ms.log'.format(volflnm)
+    msout = open(msflnm, 'w')
+    # msout.write("Milestones Missed:\n")
     vol = OCRVol('resources/ocr/{}.txt'.format(volflnm), startat=startsat, skips=pgs_to_skip)
     avg_ln_len = vol.avg_line_length
     logging.info("Vol has {} lines and is {} characters long".format(vol.line_count, vol.length))
@@ -241,11 +242,19 @@ def do_insertions(inpath, outpath, volflnm, startsat):
         print("\nWriting last file")
         unidoc.writedoc(outpath)
 
-    msout.write("****** {} Milestones not inserted for {} ******\n".format(len(missed_ms), volflnm))
     if len(skipped_lines) > 0:
         msout.write("\n\n****** {} Lines Skipped ******\n".format(len(skipped_lines)))
         for skl in skipped_lines:
             msout.write("{}\n".format(skl))
+
+    msout.close()
+    tmpfnm = msflnm.replace('.log', '-tmp.log')
+    shutil.copy(msflnm, tmpfnm)
+    msmissstr = "****** {} Milestones not inserted for {} ******\n".format(len(missed_ms), volflnm)
+    with open(tmpfnm, 'r') as tmpin, open(msflnm, 'w') as newout:
+        newout.write(msmissstr)
+        newout.writelines(tmpin.readlines())
+    remove(tmpfnm)
 
 
 parser = argparse.ArgumentParser(description='Insert Milestones from OCR in Unicode Docs')

@@ -1,6 +1,7 @@
 import os
 import os.path
 import re
+import logging
 
 
 class UniVol:
@@ -37,12 +38,19 @@ class UniVol:
     def get_length(self):
         return len(self.text)
 
-    def get_search_chunk(self, factor=1, skipped=0):
+    def get_search_chunk(self, factor=2, skipped=0):
+        """
+        Get a chunk of text within which to search for a line beginning
+        :param factor: The factor multiplied with the average line length to get the size of the chunk
+        :param skipped: Previous number of lines skipped
+        :return:
+        """
         if skipped > 0:  # Some ocr lines don't come through and are just 2 or 3 characters long, these are skipped
-            self.index += int(self.avglnlen * skipped * 0.8)
-            factor = skipped * 1.5
+            augment = int(self.avglnlen * skipped * 0.5)
+            logging.debug("{} Lines skipped. Index is {}, Adding {}".format(skipped, self.index, augment))
+            self.index += augment
         chunk_start = self.index
-        chunk_end = chunk_start + int(self.avglnlen * 2 * factor)
+        chunk_end = chunk_start + int(self.avglnlen * factor)
         chunk = self.text[chunk_start:chunk_end]
         chunk = self.clean_chunk(chunk)
         return chunk
