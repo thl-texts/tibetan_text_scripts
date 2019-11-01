@@ -10,6 +10,9 @@ class OCRVol:
 
     def __init__(self, path, startat=0, skips=[], translen=10, maxskips=10):
         self.inpath = path
+        # print(path)
+        vnmtc = re.search(r'vol[\-\_](\d+)', self.inpath)
+        self.volnum = vnmtc.group(1) if vnmtc else "unknown"
         self.startat = startat
         self.skips = skips  # array of page numbers to skip. Skipped pages do not increment milestone counter
         # but startat becomes one lower for ever page skipped
@@ -90,6 +93,40 @@ class OCRVol:
         elif not lnnm:
             lnnm = self.n
         return len(self.lines[lnnm][2]) if len(self.lines[lnnm]) == 3 else -1
+
+    def print_stats(self):
+        import pandas as pd
+        lns_per_pg = {}
+        for item in self.lines:
+            pgnm = item[0]
+            if pgnm in lns_per_pg:
+                lns_per_pg[pgnm] += 1
+            else:
+                lns_per_pg[pgnm] = 1
+        totalpgs = len(lns_per_pg.keys())
+        totallns = sum(lns_per_pg.values())
+        summarylns = {}
+        for val in lns_per_pg.values():
+            val = str(val)
+            if val in summarylns:
+                summarylns[val] += 1
+            else:
+                summarylns[val] = 1
+
+        print("Statistics for Volume {}".format(self.volnum))
+        print("Total pages: {}".format(totalpgs))
+        print("Total lines: {}".format(totallns))
+        print("Average number of lines per page: {}".format("%.2f" % (totallns / totalpgs)))
+        print("Lines per page spread:")
+        sumkeys = list(summarylns.keys())
+        sumkeys.sort()
+        print("Lines per page: \t", end='')
+        print("\t".join(sumkeys))
+        print("Number of pages: \t", end='')
+        for ky in sumkeys:
+            print("{}\t".format(summarylns[ky]), end='')
+
+        print("")
 
     def get_transition(self):
         """

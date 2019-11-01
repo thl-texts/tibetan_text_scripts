@@ -49,6 +49,8 @@ class UniVol:
             augment = int(self.avglnlen * skipped * 0.5)
             logging.debug("{} Lines skipped. Index is {}, Adding {}".format(skipped, self.index, augment))
             self.index += augment
+            # self.index += int(self.avglnlen * skipped * 0.8) # old augment
+            factor = skipped * 1.5
         chunk_start = self.index
         chunk_end = chunk_start + int(self.avglnlen * factor)
         chunk = self.text[chunk_start:chunk_end]

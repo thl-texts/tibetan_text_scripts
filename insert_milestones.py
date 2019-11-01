@@ -188,6 +188,7 @@ def do_insertions(inpath, outpath, volflnm, startsat):
             continue
 
         ms = vol.get_milestone()  # Get the current milestone string, e.g. [12.4] or [51][51.1]
+
         if debugon:
             logging.debug("\n===========================================\n")
             logging.debug("Milestone: {} (Curr pg: {})".format(ms, vol.get_current_page()))
@@ -203,8 +204,11 @@ def do_insertions(inpath, outpath, volflnm, startsat):
 
         if ind is False:
             # If not found, do not insert milestone.
-            logging.warning("!!!!!!! Milestone {} not found !!!!!!!!!!".format(ms))
-            logging.warning("Current index: {}, Full Length: {}".format(unidoc.index, len(unidoc.text)))
+            logging.warning("!!! Milestone {} not found ({}) !!!!!!!!!!".format(ms, vol.get_page_num(True)))
+            # logging.warning("Current index: {}, Full Length: {}".format(unidoc.index, len(unidoc.text)))
+            # logging.warning('Line beg: {}   Doc text area: {}'.format(lnbeg,
+            #                                                           unidoc.text[unidoc.index:unidoc.index + 30]))
+
             print("\rMilestone {} not found!".format(ms), end='')
             missedstr = ms.replace('][', '/').strip('[]')
             missed_ms.append(missedstr)
