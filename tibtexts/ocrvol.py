@@ -28,7 +28,7 @@ class OCRVol:
         with open(self.inpath, 'r') as fin:
             for ln in fin:
                 ln = ln.strip()
-                if '.tif' in ln:
+                if '.tif' in ln or '.jpg' in ln:
                     in_intro = False
                     mtch = re.search(r'kama[\-_]vol[\-_]\d+/out_+(\d+)', ln)
                     if mtch:

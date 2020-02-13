@@ -78,7 +78,8 @@ def find_insertion_point(doc, linebeg, lines_skipped):
         if debugon:
             logging.debug("Try {} Looking for: {}".format(tries, linebeg))
             logging.debug("In: {} (ind: {})".format(chunk, doc.index))
-
+            if lines_skipped > 0:
+                logging.debug("Lines skipped: {}".format(lines_skipped))
         mtc = find_near_matches(linebeg, chunk, max_l_dist=ldist)  # Call fuzzy search to find the match point
         if debugon:
             logging.debug("match: {}".format(mtc))
@@ -97,7 +98,6 @@ def find_insertion_point(doc, linebeg, lines_skipped):
 
             insind = mtc[best_match].start
             break
-
     return insind
 
 
@@ -196,10 +196,15 @@ def do_insertions(inpath, outpath, volflnm, startsat):
         ind = find_insertion_point(unidoc, lnbeg,
                                    skipped)  # Call function to find the insertion point in the unidoc for ms
 
-        if ind is False and unidoc.get_length() - unidoc.index < 200 and len(unidocs) > 0:
+        if ind is False and unidoc.get_length() - unidoc.index < 100 and len(unidocs) > 0:
             unidoc.writedoc(outpath)
             unidoc = get_next_unidoc()
-            logging.info("\n**********************\nDoing file: {}\n**********************\n".format(unidoc.filename))
+            if debugon:
+                doclen = unidoc.get_length()
+                inddiff = doclen - unidoc.index
+                logging.debug("Doc len {}, current ind {}, diff{} ".format(doclen, unidoc.index, inddiff))
+            logging.info("\n**********************\nDoing file: {} (Length: {})\n**********************\n".format(
+                        unidoc.filename, len(unidoc.text)))
             ind = find_insertion_point(unidoc, lnbeg, skipped)
 
         if ind is False:
@@ -227,15 +232,19 @@ def do_insertions(inpath, outpath, volflnm, startsat):
         unidoc.insert_milestone(ms, ind, vol.get_line_length())
         skipped = 0  # Reset skipped lines
 
-        # Test if end of unidoc. Added "+ 25" for vol. 2 but didn't have it for vol. 1
-        if len(unidoc.text) - unidoc.index < vol.avg_line_length:
+        # Test if end of unidoc. Added "+ 25" for vol. 2 but didn't have it for vol. 1 (adding 25 for vol 99)
+        if unidoc.get_length() - unidoc.index < vol.avg_line_length:
+            if debugon:
+                logging.debug("Going to next Doc!\nText len: {}, curr index: {}, avg lnlen: {}".format(
+                    unidoc.get_length(), unidoc.index, vol.avg_line_length))
             # If we are at the end of a chunk document ...
             unidoc.writedoc(outpath)  # Write it and
             if len(unidocs) > 0:
                 # If there are more documents, open the next one (popping it off the top of the list)
                 unidoc = get_next_unidoc()
                 logging.info(
-                    "\n**********************\nDoing file: {}\n**********************\n".format(unidoc.filename))
+                    "\n**********************\nDoing file: {} (Length: {})\n**********************\n".format(
+                        unidoc.filename, len(unidoc.text)))
             elif vol.get_line_num(True) < vol.line_count:
                 # If no more chunk docs left, but still lines in the OCR volume, then notify
                 logging.warning("Reached end of unicode Docs but volume at line {} of {}".format(vol.get_line_num(True),
