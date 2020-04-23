@@ -1,5 +1,6 @@
 # Ignore any additions to the in and out folders
 resources/ocr/
+resources/misc-no-vc/
 test/
 env/
 venv/
