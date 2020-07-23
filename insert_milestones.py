@@ -16,6 +16,7 @@ import logging
 import argparse
 
 debugon = False
+debugpgst = 0
 unidocs = []
 avg_ln_len = 0
 pgs_to_skip = list()
@@ -159,8 +160,20 @@ def clean_ocr_line(txt):
     return txt
 
 
+def should_debug(ms):
+    global debugon, debugpgst
+    if isinstance(debugpgst, int) and debugpgst > 0:
+        ms = ms.strip('[]').split('.')[0]
+        if ms.isnumeric():
+            ms = int(ms)
+            if ms < debugpgst:
+                debugon = False
+            else:
+                debugon = True
+
+
 def do_insertions(inpath, outpath, volflnm, startsat):
-    global avg_ln_len, unidocs, pgs_to_skip, debugon
+    global avg_ln_len, unidocs, pgs_to_skip, debugon, debugpgst
     msflnm = 'workspace/logs/{}-missed-ms.log'.format(volflnm)
     msout = open(msflnm, 'w')
     # msout.write("Milestones Missed:\n")
@@ -188,6 +201,8 @@ def do_insertions(inpath, outpath, volflnm, startsat):
             continue
 
         ms = vol.get_milestone()  # Get the current milestone string, e.g. [12.4] or [51][51.1]
+
+        should_debug(ms)
 
         if debugon:
             logging.debug("\n===========================================\n")
@@ -233,7 +248,7 @@ def do_insertions(inpath, outpath, volflnm, startsat):
         skipped = 0  # Reset skipped lines
 
         # Test if end of unidoc. Added "+ 25" for vol. 2 but didn't have it for vol. 1 (adding 25 for vol 99)
-        if unidoc.get_length() - unidoc.index < vol.avg_line_length:
+        if unidoc.get_length() - unidoc.index + 25 < vol.avg_line_length:
             if debugon:
                 logging.debug("Going to next Doc!\nText len: {}, curr index: {}, avg lnlen: {}".format(
                     unidoc.get_length(), unidoc.index, vol.avg_line_length))
@@ -281,6 +296,8 @@ parser.add_argument('-o', '--out', default='workspace/out',
                     help='The Out Directory with the files')
 parser.add_argument('-d', '--debug', action='store_true',
                     help='Print debugging information')
+parser.add_argument('-ds', '--debugstart', default=1,
+                    help='Pages to start debuggin on')
 args = parser.parse_args()
 
 
@@ -311,6 +328,7 @@ if __name__ == "__main__":
         exit(0)
 
     debugon = kwargs['debug']
+    debugpgst = kwargs['debugstart']
 
     # OCR usually seem to start on pg 7, vol 1 starts at 167
     pgs_to_skip = list()  # pgs_to_skip are pages in the OCR vol to be skipped without incrementing the milestone number
