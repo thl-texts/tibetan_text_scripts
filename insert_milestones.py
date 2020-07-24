@@ -8,8 +8,8 @@ Date: 9/5/2019
 from tibtexts.ocrvol import OCRVol
 from tibtexts.univol import UniVol
 from fuzzysearch import find_near_matches
-from os import getcwd, listdir, remove, system, mkdir
-from os.path import join, exists
+from os import getcwd, listdir, remove, system, mkdir, remove
+from os.path import join, exists, splitext, isfile
 import shutil
 import datetime
 import logging
@@ -20,6 +20,23 @@ debugpgst = 0
 unidocs = []
 avg_ln_len = 0
 pgs_to_skip = list()
+
+
+def clear_files(vnum):
+    resp = input("Are you sure you want to remove all files from workspace/in and workspace/out folders \n"
+                 "And copy in new vol chunk files (Y/n)? ")
+    if resp == 'Y':
+        wkspdirs = ['./workspace/in', './workspace/in/bak', './workspace/out', './workspace/out/bak']
+        for wspd in wkspdirs:
+            wkfiles = [join(wspd, f) for f in listdir(wspd) if isfile(join(wspd, f)) and f[0] != '.']
+            for f in wkfiles:
+                remove(f)
+
+        chunk_path = '/Users/thangrove/Documents/Sandbox/THL/Projects/Kama/Kama-Unicode/Docx/Vol Chunks/kama-v{}'.format(vnum)
+        chunk_files = [fn for fn in sorted(listdir(chunk_path)) if vnum in fn]
+        for f in chunk_files:
+            fpath = join(chunk_path, f)
+            shutil.copy(fpath, './workspace/in')
 
 
 def set_unidocs(pth):
@@ -172,12 +189,12 @@ def should_debug(ms):
                 debugon = True
 
 
-def do_insertions(inpath, outpath, volflnm, startsat):
+def do_insertions(inpath, outpath, volflnm, startsat, blankpgs, breaks):
     global avg_ln_len, unidocs, pgs_to_skip, debugon, debugpgst
     msflnm = 'workspace/logs/{}-missed-ms.log'.format(volflnm)
     msout = open(msflnm, 'w')
     # msout.write("Milestones Missed:\n")
-    vol = OCRVol('resources/ocr/{}.txt'.format(volflnm), startat=startsat, skips=pgs_to_skip)
+    vol = OCRVol('resources/ocr/{}.txt'.format(volflnm), startat=startsat, skips=pgs_to_skip, badblanks=blankpgs)
     avg_ln_len = vol.avg_line_length
     logging.info("Vol has {} lines and is {} characters long".format(vol.line_count, vol.length))
     logging.info("Vol average line length: {}".format(avg_ln_len))
@@ -201,7 +218,8 @@ def do_insertions(inpath, outpath, volflnm, startsat):
             continue
 
         ms = vol.get_milestone()  # Get the current milestone string, e.g. [12.4] or [51][51.1]
-
+        currpg = ms.split(']')[0].split('.')[0].replace('[', '')
+        # print(currpg)
         should_debug(ms)
 
         if debugon:
@@ -210,8 +228,19 @@ def do_insertions(inpath, outpath, volflnm, startsat):
 
         ind = find_insertion_point(unidoc, lnbeg,
                                    skipped)  # Call function to find the insertion point in the unidoc for ms
+        # if '329' in ms:
+        #     print("\nunidoc lenght: {}, \ncurr index: {}, \ndiff: {} \navg line length: {}".format(
+        #         unidoc.get_length(),
+        #         unidoc.index,
+        #         unidoc.get_length() - unidoc.index,
+        #         vol.avg_line_length));
+        #     print (ms)
+        #     exit(0)
 
-        if ind is False and unidoc.get_length() - unidoc.index < 100 and len(unidocs) > 0:
+        if ((ind is False and unidoc.get_length() - unidoc.index < 100)
+                or currpg in breaks) and len(unidocs) > 0:
+            if currpg in breaks:
+                breaks.remove(currpg)
             unidoc.writedoc(outpath)
             unidoc = get_next_unidoc()
             if debugon:
@@ -290,10 +319,15 @@ parser.add_argument('-v', '--vol', required=True,
                     help='The Volume Number')
 parser.add_argument('-s', '--start', required=True,
                     help='The scan page the volume starts at')
+parser.add_argument('-b', '--blank', help="Comma-separated list of numbered pages that are blank in scan "
+                                          "but not found in OCR (so MS page numbers fall behind 1)")
+parser.add_argument('-br', '--break', help="pages to force new word doc")
 parser.add_argument('-i', '--in', default='workspace/in',
                     help='The In Directory with the files')
 parser.add_argument('-o', '--out', default='workspace/out',
                     help='The Out Directory with the files')
+parser.add_argument('-c', '--clear', action='store_true',
+                    help='Clear out old files in In and Out Workspace folders and copy in raw vol chunk files'),
 parser.add_argument('-d', '--debug', action='store_true',
                     help='Print debugging information')
 parser.add_argument('-ds', '--debugstart', default=1,
@@ -340,7 +374,11 @@ if __name__ == "__main__":
     logging.basicConfig(filename='workspace/logs/{}-{}.log'.format(volfile, currdt), filemode='w',
                         format='(%(levelname)s) %(message)s', level=logging.DEBUG)
 
-    do_insertions(indir, outdir, volfile, startpg)
+    if kwargs['clear']:
+        clear_files(volnum)
+    blanks = [] if not kwargs['blank'] else kwargs['blank'].split(',')
+    breaks = [] if not kwargs['break'] else kwargs['break'].split(',')
+    do_insertions(indir, outdir, volfile, startpg, blanks, breaks)
 
     print("Done!")
 

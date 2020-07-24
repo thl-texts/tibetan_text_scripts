@@ -8,7 +8,7 @@ class OCRVol:
     LINE_FRAG_SYLLABLES = 5
     lines = []
 
-    def __init__(self, path, startat=0, skips=[], translen=10, maxskips=10):
+    def __init__(self, path, startat=0, skips=[], translen=10, maxskips=10, badblanks=[]):
         self.inpath = path
         # print(path)
         vnmtc = re.search(r'vol[\-\_](\d+)', self.inpath)
@@ -17,6 +17,7 @@ class OCRVol:
         self.skips = skips  # array of page numbers to skip. Skipped pages do not increment milestone counter
         # but startat becomes one lower for ever page skipped
         self.pgsskipped = set()  # Keep track of number of pages already skipped to subtract from MS counter
+        self.badblanks = badblanks
         self.maxskips = maxskips * 7  # maxskips given is number of pages, multiply by 7 to get rough number of lines
         self.translen = translen
         pgnm = '0'
@@ -24,6 +25,7 @@ class OCRVol:
         self.startn = -1
         self.length = 0
         self.line_count = 0
+        self.adj = 0
         in_intro = True
         with open(self.inpath, 'r') as fin:
             for ln in fin:
@@ -149,11 +151,18 @@ class OCRVol:
         # Adjust page number for milestone based on start page
         # if it starts at 7, it means milestone page 1 is in the OCR labeled as:
         #           "tbocrtifs/kama-vol-002/out__0007.tif"
-        pg = pg - self.startat - len(self.pgsskipped) + 1
+        pg = pg - self.startat - len(self.pgsskipped) + 1 + self.adj
+        pgstr = str(pg)
+        mspref = ""  # Prefix for the blank page milestone. Usually empty.
+        if pgstr in self.badblanks:
+            mspref = "[{}]".format(pg)
+            pg = pg + 1
+            self.adj += 1
+            self.badblanks.remove(pgstr)
         # flgstr = "*" if flag else ""
         ms = "[{}.{}]".format(pg, lnnm)
         if lnnm == 1:
-            ms = "[{}]".format(pg) + ms
+            ms = mspref + "[{}]".format(pg) + ms
         return ms
 
     def get_page_num(self, with_line=False, as_int=False):

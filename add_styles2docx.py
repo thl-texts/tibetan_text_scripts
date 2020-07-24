@@ -1,14 +1,26 @@
-from os import listdir, mkdir, path, system, getcwd, chdir, remove
+from os import listdir, mkdir, path, system, getcwd, chdir, remove, path
 import shutil
+import glob
 from docx import Document
 from docx.shared import Pt
 import argparse
+
+
+def reinstate_text_files():
+    fpath = './workspace/out'
+    for f in glob.glob(path.join(fpath, '*.docx')):
+        remove(f)
+    bakpath = path.join(fpath, 'bak')
+    for f in glob.glob(path.join(bakpath, '*.txt')):
+        shutil.move(f, fpath)
 
 
 def summarize_args(kws):
     print("----------- Parameters   ---------")
     print("In directory: {}".format(kws['in']))
     print("Out directory: {}".format(kws['out']))
+    if kws['redo']:
+        print("Redoing from text files!!!!")
     print("Options:")
     print("\tAdd metadata table: {}".format("yes" if kws['table'] else "no"))
     print("\tDo annotations: {}".format("yes" if kws['annotations'] else "no"))
@@ -104,8 +116,8 @@ def copy_doc_to_template(infnm, outfnm, include_table=True, do_annots=False, mar
 
 def do_annotations(p, annotstyl):
     '''
-    Finds text betwee « and » and applies the Annotations style
-
+    Finds text between « and » and applies the Annotations style
+        «  »
     :param p:
     :param annotstyl:
     :return: Null (manipulation done by reference)
@@ -258,6 +270,8 @@ parser.add_argument('-a', '--annotations', action='store_true',
                     help='Convert << and >> into annotation style')
 parser.add_argument('-m', '--milestones', action='store_true',
                     help='Add styles to page and line milestones')
+parser.add_argument('-r', '--redo', action='store_true',
+                    help='Reconvert original text files')
 args = parser.parse_args()
 
 if __name__ == "__main__":
@@ -277,6 +291,8 @@ if __name__ == "__main__":
         exit(0)
 
     summarize_args(kwargs)
+    if kwargs['redo']:
+        reinstate_text_files()
     stardardize_in_files(indir)
     print("Files converted to docx!")
     convert_files(indir, outdir, kwargs['table'], kwargs['annotations'], kwargs['milestones'])
