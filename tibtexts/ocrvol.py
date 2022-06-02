@@ -4,6 +4,7 @@ class OCRVol:
     """
         A class to handle OCR Tibetan volumes
         Iterator that goes through lines
+        Used to find page and line breaks in existing texts
     """
     LINE_FRAG_SYLLABLES = 5
     lines = []
@@ -13,7 +14,7 @@ class OCRVol:
         # print(path)
         vnmtc = re.search(r'vol[\-\_](\d+)', self.inpath)
         self.volnum = vnmtc.group(1) if vnmtc else "unknown"
-        self.startat = startat
+        self.startat = int(startat) if isinstance(startat, int) or startat.isnumeric() else 0
         self.skips = skips  # array of page numbers to skip. Skipped pages do not increment milestone counter
         # but startat becomes one lower for ever page skipped
         self.pgsskipped = set()  # Keep track of number of pages already skipped to subtract from MS counter
