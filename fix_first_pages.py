@@ -4,12 +4,9 @@ A script to add first page milestones if missing from word document chunks
 
 import os
 import argparse
-import shutil
 from docx import Document
 import re
-import copy
 from docx.text.run import Run
-from docx.oxml.text.run import CT_R
 
 
 parser = argparse.ArgumentParser(description='Add first page milestones to all documents in folder')
@@ -67,16 +64,4 @@ if __name__ == "__main__":
         if change:
             newdocpath = os.path.join(folder, f"{docnm}-fixed.docx")
             doc.save(newdocpath)
-        # for p in doc.paragraphs:
-        #     for r in p.runs:
-        #         mtchs = re.search(mspattern, r.text)
-        #         if mtchs:
-        #             pgnum = int(mtchs.group(1))
-        #             lnstr = mtchs.group(2)
-        #             if pgnum >= stnum and (endnum is None or pgnum <= endnum):
-        #                 r.text = "[{}{}]".format(pgnum + delta, lnstr)
-        #                 chngct += 1
-        #
-        # doc.save(docpath)
-        # print("{} milestones changed!".format(chngct))
 

@@ -98,7 +98,7 @@ class OCRVol:
         return len(self.lines[lnnm][2]) if len(self.lines[lnnm]) == 3 else -1
 
     def print_stats(self):
-        import pandas as pd
+        # import pandas as pd
         lns_per_pg = {}
         for item in self.lines:
             pgnm = item[0]
