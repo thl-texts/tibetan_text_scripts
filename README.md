@@ -34,6 +34,20 @@ installed, look to [its installation page](https://docs.brew.sh/Installation)). 
 
 *Note:* To get out of the virtual environment, either close the terminal or type `deactivate`
 
+## Inserting Milestones into Chunked Texts Based on OCR (Kama)
+
+This is the process to take chunked texts of a Kama volume and insert the milestones. 
+1. Copy volume chunked files into the workspace\in folder
+2. Run `insert_milestones.py -v 96 -s 8` where `-v` is the volume number and `-s` is the page that the volume starts on, 
+skipping introductory TOC etc., i.e., the first page of first text.
+3. Run `add_styles2docx.py -i workspace/out -a -m` 
+
+Other options include:
+* `-b` (blank pages skipped in scan so scan image number doesn't count them), 
+* `-br` (pages which represent a new file to force a break when script not working properly),
+* `-c` Clear files from in and out folders and copy in new raw chunk files for the volume in question, 
+* `-d` turn on debugging.
+
 ## Overall Process for Conversion of Sambhota Files
 
 The conversion process is a multi-stepped process that requires both a Mac and a Windows machine to proceed 
