@@ -1,6 +1,9 @@
-lxml==4.4.0
-python-docx==0.8.10
-fuzzywuzzy==0.17.0
-python-Levenshtein==0.12.0
-fuzzysearch==0.6.2
-python-docx==0.8.10
+attrs==22.2.0
+fuzzysearch==0.7.3
+fuzzywuzzy==0.18.0
+Levenshtein==0.20.9
+lxml==4.9.2
+python-docx==0.8.11
+python-Levenshtein==0.20.9
+rapidfuzz==2.13.7
+six==1.16.0

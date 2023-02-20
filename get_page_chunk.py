@@ -23,7 +23,7 @@ def make_doc(v, stpg, enpg, outfl):
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Insert Milestones from OCR in Unicode Docs')
+    parser = argparse.ArgumentParser(description='??Insert Milestones from OCR in Unicode Docs??')
     parser.add_argument('vnum', type=int, help="Number of volume to load")
     parser.add_argument('outfile', type=str, help="Name of outfile to write")
     parser.add_argument('-s', '--start', type=int, default=1,
