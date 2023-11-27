@@ -9,7 +9,8 @@ from tibtexts.ocrvol import OCRVol
 from tibtexts.univol import UniVol
 from fuzzysearch import find_near_matches
 from os import getcwd, listdir, remove, system, mkdir, remove
-from os.path import join, exists, splitext, isfile
+from os.path import basename, join, exists, splitext, isfile
+from glob import glob
 import shutil
 import datetime
 import logging
@@ -55,6 +56,8 @@ def set_unidocs(pth):
                 if not exists(bakfld):
                     mkdir(bakfld)
                 filepth = join(pth, f)
+                tmppth = join(pth, 'temp', f)
+                shutil.copy(filepth, tmppth)
                 cmd = 'textutil -convert txt -output "{}" "{}"'.format(filepth.replace('.docx', '.txt'), filepth)
                 system(cmd)
                 shutil.move(filepth, join(bakfld, f))
@@ -194,6 +197,7 @@ def do_insertions(inpath, outpath, volflnm, startsat, blankpgs, breaks):
     msflnm = 'workspace/logs/{}-missed-ms.log'.format(volflnm)
     msout = open(msflnm, 'w')
     # msout.write("Milestones Missed:\n")
+    print("Pages to skip: " + ", ".join([str(pg) for pg in pgs_to_skip]))
     vol = OCRVol('resources/ocr/{}.txt'.format(volflnm), startat=startsat, skips=pgs_to_skip, badblanks=blankpgs)
     avg_ln_len = vol.avg_line_length
     logging.info("Vol has {} lines and is {} characters long".format(vol.line_count, vol.length))
@@ -224,7 +228,7 @@ def do_insertions(inpath, outpath, volflnm, startsat, blankpgs, breaks):
 
         if debugon:
             logging.debug("\n===========================================\n")
-            logging.debug("Milestone: {} (Curr pg: {})".format(ms, vol.get_current_page()))
+            logging.debug("Milestone: {} (Curr pg: {}, Curr Doc: {})".format(ms, vol.get_current_page(), unidoc.filename))
 
         ind = find_insertion_point(unidoc, lnbeg,
                                    skipped)  # Call function to find the insertion point in the unidoc for ms
@@ -253,7 +257,8 @@ def do_insertions(inpath, outpath, volflnm, startsat, blankpgs, breaks):
 
         if ind is False:
             # If not found, do not insert milestone.
-            logging.warning("!!! Milestone {} not found ({}) !!!!!!!!!!".format(ms, vol.get_page_num(True)))
+            logging.warning("!!! Milestone {} not found ({}) for: {} !!!!!!!!!!".format(ms, vol.get_page_num(True), lnbeg))
+            logging.warning('Doc text area: {}'.format(unidoc.text[unidoc.index:unidoc.index + 30]))
             # logging.warning("Current index: {}, Full Length: {}".format(unidoc.index, len(unidoc.text)))
             # logging.warning('Line beg: {}   Doc text area: {}'.format(lnbeg,
             #                                                           unidoc.text[unidoc.index:unidoc.index + 30]))
@@ -365,8 +370,10 @@ if __name__ == "__main__":
     debugpgst = kwargs['debugstart']
 
     # OCR usually seem to start on pg 7, vol 1 starts at 167
+    # TODO: Make this a script parameter
     pgs_to_skip = list()  # pgs_to_skip are pages in the OCR vol to be skipped without incrementing the milestone number
-    # for vol 1 use range(171, 177) vols 2 & 3 skip nothing
+    if int(volnum) == 1:
+        pgs_to_skip = list(range(171, 177))  # for Kama vol 1 use list(range(171, 177)) vols 2 & 3 skip nothing
 
     # Set up the logging
     currdt = datetime.datetime.now()
@@ -379,6 +386,13 @@ if __name__ == "__main__":
     blanks = [] if not kwargs['blank'] else kwargs['blank'].split(',')
     breaks = [] if not kwargs['break'] else kwargs['break'].split(',')
     do_insertions(indir, outdir, volfile, startpg, blanks, breaks)
+    txtfiles = glob(join(indir, '*.txt'))
+    for txt in txtfiles:
+        shutil.move(txt, join(indir, 'temp', basename(txt)))
+    origfiles = glob(join(indir, 'temp', '*.docx'))
+    for fl in origfiles:
+        dest = join(indir, basename(fl))
+        shutil.move(fl, dest)
 
     print("Done!")
 

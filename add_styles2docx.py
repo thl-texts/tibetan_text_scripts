@@ -189,7 +189,7 @@ def get_template_doc(fnm, with_table=True):
     :return: docx.document.Document
     '''
     folder = 'resources'
-    tplnm = 'tibtext-styled-tpl.docx'
+    tplnm = 'tibtext-styled-tpl-2023-09-26.docx'  # 'tibtext-styled-tpl.docx'
     # print("Template: {}".format(tplnm))
     tplpath = path.join(folder, tplnm)
     doc = Document(tplpath)
@@ -249,7 +249,7 @@ def set_tib_font(doc):
 
 def convert_files(ind, outd, table, annots, milestones):
     ct = 0
-    for fnm in [f for f in listdir(ind) if f.endswith('.docx')]:
+    for fnm in [f for f in listdir(ind) if f.endswith('.docx') and not f.startswith('~')]:
         print("Processing {}".format(fnm))
         inf = path.join(ind, fnm)
         outf = path.join(outd, fnm.replace('-temp', ''))
