@@ -21,48 +21,50 @@ parser.add_argument('-nb', '--no-backup', action='store_true',
                     help='Do not make a backup file')
 parser.add_argument('-p', '--path', default='workspace/out',
                     help='Path to document')
-parser.add_argument('doc', help="File name of the document")
+parser.add_argument('docs', nargs='+', help="File name(s) of the document(s)")
 args = parser.parse_args()
 
 
 if __name__ == "__main__":
-    mspattern = re.compile('\[(\d+)(\.?\d*)\]')
+    mspattern = re.compile(r'\[(\d+)(\.?\d*)\]')
     kwargs = vars(args)
-    filenm = kwargs['doc']
     filepath = kwargs['path']
-    docpath = os.path.join(filepath, filenm)
-    if not kwargs['no_backup']:
-        bknm = filenm.replace('.doc', '-bak.doc')
-        bkpath = os.path.join(filepath, bknm)
-        shutil.copy(docpath, bkpath)
-        print("Backup at: {}".format(bkpath))
-    stnum = kwargs['start']
-    endnum = kwargs['end']
-    delta = int(kwargs['delta'])
-    chngct = 0
+    for filenm in kwargs['docs']:
+        # filenm = kwargs['doc'] # made into multiple docs argument
+        docpath = os.path.join(filepath, filenm)
+        if not kwargs['no_backup']:
+            bknm = filenm.replace('.doc', '-bak.doc')
+            bkpath = os.path.join(filepath, bknm)
+            shutil.copy(docpath, bkpath)
+            print("Backup at: {}".format(bkpath))
+        stnum = kwargs['start']
+        endnum = kwargs['end']
+        delta = int(kwargs['delta'])
+        chngct = 0
 
-    print("Updating document: {} \n"
-          "{} {} "
-          "starting at page {} and "
-          "ending at {}".format(
-                filenm,
-                "Adding" if delta > 0 else "Subtracting",
-                delta,
-                stnum,
-                endnum if endnum is not None else "the end of the document"
-            ))
+        print("Updating document: {} \n"
+              "{} {} "
+              "starting at page {} and "
+              "ending at {}".format(
+                    filenm,
+                    "Adding" if delta > 0 else "Subtracting",
+                    delta,
+                    stnum,
+                    endnum if endnum is not None else "the end of the document"
+                ))
 
-    doc = Document(docpath)
-    for p in doc.paragraphs:
-        for r in p.runs:
-            mtchs = re.search(mspattern, r.text)
-            if mtchs:
-                pgnum = int(mtchs.group(1))
-                lnstr = mtchs.group(2)
-                if pgnum >= stnum and (endnum is None or pgnum <= endnum):
-                    r.text = "[{}{}]".format(pgnum + delta, lnstr)
-                    chngct += 1
+        doc = Document(docpath)
+        for p in doc.paragraphs:
+            for r in p.runs:
+                mtchs = re.search(mspattern, r.text)
+                if mtchs:
+                    pgnum = int(mtchs.group(1))
+                    lnstr = mtchs.group(2)
+                    if pgnum >= stnum and (endnum is None or pgnum <= endnum):
+                        r.text = "[{}{}]".format(pgnum + delta, lnstr)
+                        chngct += 1
 
-    doc.save(docpath)
-    print("{} milestones changed!".format(chngct))
+        doc.save(docpath)
+        print("{} milestones changed!".format(chngct))
+    print("{0} files processed!".format(len(kwargs['docs'])))
 

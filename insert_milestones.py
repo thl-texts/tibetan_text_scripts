@@ -7,7 +7,7 @@ Date: 9/5/2019
 """
 from tibtexts.ocrvol import OCRVol
 from tibtexts.univol import UniVol
-from fuzzysearch import find_near_matches
+from fuzzysearch import find_near_matches, Match
 from os import getcwd, listdir, remove, system, mkdir, remove
 from os.path import basename, join, exists, splitext, isfile
 from glob import glob
@@ -21,23 +21,25 @@ debugpgst = 0
 unidocs = []
 avg_ln_len = 0
 pgs_to_skip = list()
+workspace = './tibetan_text_scripts/workspace'
+ocrfolder = '/Users/ndg8f/Sandbox/THL/Catalogs/Kama/ocr-plain' #'./tibetan_text_scripts/resources/ocr'
 
 
 def clear_files(vnum):
     resp = input("Are you sure you want to remove all files from workspace/in and workspace/out folders \n"
                  "And copy in new vol chunk files (Y/n)? ")
     if resp == 'Y':
-        wkspdirs = ['./workspace/in', './workspace/in/bak', './workspace/out', './workspace/out/bak']
+        wkspdirs = ['/in', '/in/bak', '/out', '/out/bak']
         for wspd in wkspdirs:
-            wkfiles = [join(wspd, f) for f in listdir(wspd) if isfile(join(wspd, f)) and f[0] != '.']
+            wkfiles = [join(workspace, wspd, f) for f in listdir(wspd) if isfile(join(wspd, f)) and f[0] != '.']
             for f in wkfiles:
                 remove(f)
 
-        chunk_path = '/Users/thangrove/Documents/Sandbox/THL/Projects/Kama/Kama-Unicode/Docx/Vol Chunks/kama-v{}'.format(vnum)
+        chunk_path = 'NEED CHUCK PATH/Vol Chunks/kama-v{}'.format(vnum)
         chunk_files = [fn for fn in sorted(listdir(chunk_path)) if vnum in fn]
         for f in chunk_files:
             fpath = join(chunk_path, f)
-            shutil.copy(fpath, './workspace/in')
+            shutil.copy(fpath, workspace + '/in')
 
 
 def set_unidocs(pth):
@@ -101,7 +103,10 @@ def find_insertion_point(doc, linebeg, lines_skipped):
             logging.debug("In: {} (ind: {})".format(chunk, doc.index))
             if lines_skipped > 0:
                 logging.debug("Lines skipped: {}".format(lines_skipped))
+
+        # Adjust the indices so they match the original full_text
         mtc = find_near_matches(linebeg, chunk, max_l_dist=ldist)  # Call fuzzy search to find the match point
+
         if debugon:
             logging.debug("match: {}".format(mtc))
         if len(mtc) == 0:
@@ -194,11 +199,12 @@ def should_debug(ms):
 
 def do_insertions(inpath, outpath, volflnm, startsat, blankpgs, breaks):
     global avg_ln_len, unidocs, pgs_to_skip, debugon, debugpgst
-    msflnm = 'workspace/logs/{}-missed-ms.log'.format(volflnm)
+    msflnm = workspace + '/logs/{}-missed-ms.log'.format(volflnm)
     msout = open(msflnm, 'w')
     # msout.write("Milestones Missed:\n")
     print("Pages to skip: " + ", ".join([str(pg) for pg in pgs_to_skip]))
-    vol = OCRVol('resources/ocr/{}.txt'.format(volflnm), startat=startsat, skips=pgs_to_skip, badblanks=blankpgs)
+    print("Ocr volume: " + ocrfolder + '/{}.txt'.format(volflnm))
+    vol = OCRVol(ocrfolder + '/{}.txt'.format(volflnm), startat=startsat, skips=pgs_to_skip, badblanks=blankpgs)
     avg_ln_len = vol.avg_line_length
     logging.info("Vol has {} lines and is {} characters long".format(vol.line_count, vol.length))
     logging.info("Vol average line length: {}".format(avg_ln_len))
@@ -327,9 +333,9 @@ parser.add_argument('-s', '--start', required=True,
 parser.add_argument('-b', '--blank', help="Comma-separated list of numbered pages that are blank in scan "
                                           "but not found in OCR (so MS page numbers fall behind 1)")
 parser.add_argument('-br', '--break', help="pages to force new word doc")
-parser.add_argument('-i', '--in', default='workspace/in',
+parser.add_argument('-i', '--in', default='./tibetan_text_scripts/workspace/in',
                     help='The In Directory with the files')
-parser.add_argument('-o', '--out', default='workspace/out',
+parser.add_argument('-o', '--out', default='./tibetan_text_scripts/workspace/out',
                     help='The Out Directory with the files')
 parser.add_argument('-c', '--clear', action='store_true',
                     help='Clear out old files in In and Out Workspace folders and copy in raw vol chunk files'),
@@ -342,14 +348,16 @@ args = parser.parse_args()
 
 if __name__ == "__main__":
     kwargs = vars(args)
+    for key, value in kwargs.items():
+        print(f"{key}: {value}")
     volnum = kwargs['vol']
     if not volnum.isnumeric():
         print("{} is not a number. Bye!".format(volnum))
         exit(0)
     volnum = str(int(volnum)).zfill(3)
-    volfile = 'kama-ocr-vol-{}'.format(volnum)
+    volfile = 'kama-vol-{}'.format(volnum)
 
-    startpg = kwargs['start'] # startsat = 4    # This is the ocr page number that should be labeled as milestone 1
+    startpg = kwargs['start'] # startsat = 4 This is the ocr page number that should be labeled as milestone 1
     if not startpg.isnumeric():
         print("{} is not a number. Bye!".format(startpg))
         exit(0)
@@ -357,6 +365,9 @@ if __name__ == "__main__":
         startpg = int(startpg)
 
     indir = kwargs['in']
+    print("In directory: {}".format(indir))
+    mydir = getcwd()
+    print("Current directory: {}".format(mydir))
     if not exists(indir):
         print("The in directory {} does not exist!".format(indir))
         exit(0)
@@ -371,14 +382,15 @@ if __name__ == "__main__":
 
     # OCR usually seem to start on pg 7, vol 1 starts at 167
     # TODO: Make this a script parameter
-    pgs_to_skip = list()  # pgs_to_skip are pages in the OCR vol to be skipped without incrementing the milestone number
-    if int(volnum) == 1:
-        pgs_to_skip = list(range(171, 177))  # for Kama vol 1 use list(range(171, 177)) vols 2 & 3 skip nothing
+    pgs_to_skip = [item.strip() for item in kwargs['blank'].split(",")] \
+        if kwargs['blank'] is not None else list()  # pgs_to_skip are pages in the OCR vol to be skipped without incrementing the milestone number
+    # if int(volnum) == 1:
+    #    pgs_to_skip = list(range(171, 177))  # for Kama vol 1 use list(range(171, 177)) vols 2 & 3 skip nothing
 
     # Set up the logging
     currdt = datetime.datetime.now()
     currdt = currdt.strftime("%Y-%m-%d_%H-%M")
-    logging.basicConfig(filename='workspace/logs/{}-{}.log'.format(volfile, currdt), filemode='w',
+    logging.basicConfig(filename='{}/logs/{}-{}.log'.format(workspace, volfile, currdt), filemode='w',
                         format='(%(levelname)s) %(message)s', level=logging.DEBUG)
 
     if kwargs['clear']:

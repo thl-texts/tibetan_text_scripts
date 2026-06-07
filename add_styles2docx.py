@@ -5,9 +5,10 @@ from docx import Document
 from docx.shared import Pt
 import argparse
 
+HOMEDIR = './tibetan_text_scripts'
 
 def reinstate_text_files():
-    fpath = './workspace/out'
+    fpath = HOMEDIR + '/workspace/out'
     for f in glob.glob(path.join(fpath, '*.docx')):
         remove(f)
     bakpath = path.join(fpath, 'bak')
@@ -27,7 +28,7 @@ def summarize_args(kws):
     print("\tDo Milestones: {}".format("yes" if kws['milestones'] else "no"))
 
 
-def stardardize_in_files(infld):
+def standardize_in_files(infld):
     '''
     Standardize the files in the in folder converting them to docx
 
@@ -188,7 +189,7 @@ def get_template_doc(fnm, with_table=True):
     :param with_table:
     :return: docx.document.Document
     '''
-    folder = 'resources'
+    folder = HOMEDIR + '/resources'
     tplnm = 'tibtext-styled-tpl-2023-09-26.docx'  # 'tibtext-styled-tpl.docx'
     # print("Template: {}".format(tplnm))
     tplpath = path.join(folder, tplnm)
@@ -260,9 +261,9 @@ def convert_files(ind, outd, table, annots, milestones):
 
 
 parser = argparse.ArgumentParser(description='Add convert text files to Word docs with THL Styles')
-parser.add_argument('-i', '--in', default='workspace/out',
+parser.add_argument('-i', '--in', default='workspace/in',
                     help='Where are the documents to convert?')
-parser.add_argument('-o', '--out',
+parser.add_argument('-o', '--out', default='workspace/out',
                     help='Where to save the converted documents')
 parser.add_argument('-t', '--table', action='store_true',
                     help='Add metadata tables to documents')
@@ -281,11 +282,12 @@ if __name__ == "__main__":
     kwargs = vars(args)
     if not kwargs['out']:
         kwargs['out'] = kwargs['in']
-    indir = kwargs['in']
+    indir = HOMEDIR + '/' + kwargs['in']
+    print(getcwd())
     if not path.isdir(indir):
         print("The In directory setting, {}, is not a directory".format(indir))
         exit(0)
-    outdir = kwargs['out']
+    outdir = HOMEDIR + '/' + kwargs['out']
     if not path.isdir(outdir):
         print("The Out directory setting, {}, is not a directory".format(outdir))
         exit(0)
@@ -293,7 +295,7 @@ if __name__ == "__main__":
     summarize_args(kwargs)
     if kwargs['redo']:
         reinstate_text_files()
-    stardardize_in_files(indir)
+    standardize_in_files(indir)
     print("Files converted to docx!")
     convert_files(indir, outdir, kwargs['table'], kwargs['annotations'], kwargs['milestones'])
     print("Removing temp files ...")
