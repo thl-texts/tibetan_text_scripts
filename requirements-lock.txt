@@ -1,0 +1,17 @@
+# Known-working exact versions, captured 2026-06-27 on Python 3.14.6.
+# These are the versions that installed and ran successfully after the original
+# pins in requirements.txt stopped building on modern Python.
+#
+# Use this file as a fallback if the loosened requirements.txt resolves to newer
+# versions that break:
+#     pip install -r requirements-lock.txt
+#
+# Note: `six` (was six==1.16.0) is no longer pulled in and is not required.
+attrs==26.1.0
+fuzzysearch==0.8.1
+fuzzywuzzy==0.18.0
+Levenshtein==0.27.3
+lxml==6.1.1
+python-docx==1.2.0
+python-Levenshtein==0.27.3
+rapidfuzz==3.14.5

@@ -9,7 +9,7 @@ from tibtexts.ocrvol import OCRVol
 from tibtexts.univol import UniVol
 from fuzzysearch import find_near_matches, Match
 from os import getcwd, listdir, remove, system, mkdir, remove
-from os.path import basename, join, exists, splitext, isfile
+from os.path import basename, join, exists, splitext, isfile, isdir
 from glob import glob
 import shutil
 import datetime
@@ -25,21 +25,73 @@ workspace = './tibetan_text_scripts/workspace'
 ocrfolder = '/Users/ndg8f/Sandbox/THL/Catalogs/Kama/ocr-plain' #'./tibetan_text_scripts/resources/ocr'
 
 
-def clear_files(vnum):
-    resp = input("Are you sure you want to remove all files from workspace/in and workspace/out folders \n"
-                 "And copy in new vol chunk files (Y/n)? ")
-    if resp == 'Y':
-        wkspdirs = ['/in', '/in/bak', '/out', '/out/bak']
-        for wspd in wkspdirs:
-            wkfiles = [join(workspace, wspd, f) for f in listdir(wspd) if isfile(join(wspd, f)) and f[0] != '.']
-            for f in wkfiles:
-                remove(f)
+def delete_files_in(dirpath, recurse=False):
+    '''
+    Remove the (non-hidden) files in dirpath. If recurse is True, also remove files in its subfolders.
+    Missing folders are silently skipped.
+    :param dirpath: str
+    :param recurse: bool
+    :return: int Count of files removed
+    '''
+    if not exists(dirpath):
+        return 0
+    count = 0
+    for f in listdir(dirpath):
+        fpath = join(dirpath, f)
+        if isfile(fpath):
+            if not f.startswith('.'):
+                remove(fpath)
+                count += 1
+        elif recurse and isdir(fpath):
+            count += delete_files_in(fpath, recurse=True)
+    return count
 
-        chunk_path = 'NEED CHUCK PATH/Vol Chunks/kama-v{}'.format(vnum)
-        chunk_files = [fn for fn in sorted(listdir(chunk_path)) if vnum in fn]
-        for f in chunk_files:
-            fpath = join(chunk_path, f)
-            shutil.copy(fpath, workspace + '/in')
+
+def clear_files(clear_all=False):
+    '''
+    Clean up the workspace folders. With clear_all=True, remove everything from workspace/in and
+    workspace/out (including their bak and temp subfolders). Otherwise reset to rerun the script:
+    clear workspace/out, clear workspace/in/temp and the top level of workspace/in, then restore the
+    original Word docs from workspace/in/bak back into workspace/in.
+    :param clear_all: bool
+    :return: None
+    '''
+    indir = join(workspace, 'in')
+    outdir = join(workspace, 'out')
+
+    if clear_all:
+        resp = input("Are you sure you want to DELETE ALL files in workspace/in and workspace/out, \n"
+                     "including their bak and temp folders? This cannot be undone (Y/n)? ")
+        if resp != 'Y':
+            print("Aborted.")
+            return
+        removed = delete_files_in(indir, recurse=True) + delete_files_in(outdir, recurse=True)
+        print("Cleared {} file(s) from workspace/in and workspace/out.".format(removed))
+        return
+
+    resp = input("Reset workspace to rerun? This clears workspace/out, workspace/in/temp and the top \n"
+                 "level of workspace/in, then restores originals from workspace/in/bak (Y/n)? ")
+    if resp != 'Y':
+        print("Aborted.")
+        return
+
+    # Clear output and the working/temp files, but leave workspace/in/bak (the originals) intact
+    delete_files_in(outdir, recurse=True)
+    delete_files_in(join(indir, 'temp'))
+    delete_files_in(indir)  # top level only
+
+    # Restore the original Word docs from bak into in to get ready for a fresh run
+    bakdir = join(indir, 'bak')
+    if not exists(bakdir):
+        print("No bak folder at {}; nothing to restore.".format(bakdir))
+        return
+    restored = 0
+    for f in listdir(bakdir):
+        fpath = join(bakdir, f)
+        if isfile(fpath) and not f.startswith('.'):
+            shutil.copy(fpath, join(indir, f))
+            restored += 1
+    print("Restored {} original file(s) from bak. Ready to rerun.".format(restored))
 
 
 def set_unidocs(pth):
@@ -338,7 +390,10 @@ parser.add_argument('-i', '--in', default='./tibetan_text_scripts/workspace/in',
 parser.add_argument('-o', '--out', default='./tibetan_text_scripts/workspace/out',
                     help='The Out Directory with the files')
 parser.add_argument('-c', '--clear', action='store_true',
-                    help='Clear out old files in In and Out Workspace folders and copy in raw vol chunk files'),
+                    help='Reset workspace to rerun: clear out/ and in/temp, clear top-level in/, '
+                         'and restore originals from in/bak'),
+parser.add_argument('-ca', '--clear-all', action='store_true',
+                    help='Delete ALL files in workspace in/ and out/ (including bak and temp folders)'),
 parser.add_argument('-d', '--debug', action='store_true',
                     help='Print debugging information')
 parser.add_argument('-ds', '--debugstart', default=1,
@@ -393,8 +448,10 @@ if __name__ == "__main__":
     logging.basicConfig(filename='{}/logs/{}-{}.log'.format(workspace, volfile, currdt), filemode='w',
                         format='(%(levelname)s) %(message)s', level=logging.DEBUG)
 
-    if kwargs['clear']:
-        clear_files(volnum)
+    if kwargs['clear_all']:
+        clear_files(clear_all=True)
+    elif kwargs['clear']:
+        clear_files(clear_all=False)
     blanks = [] if not kwargs['blank'] else kwargs['blank'].split(',')
     breaks = [] if not kwargs['break'] else kwargs['break'].split(',')
     do_insertions(indir, outdir, volfile, startpg, blanks, breaks)
