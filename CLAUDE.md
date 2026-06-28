@@ -56,6 +56,13 @@ the per-run logs in `workspace/logs/`.
 
 ## Code layout
 
+- `process_volume.py` — orchestrator that chains `insert_milestones.py` then
+  `add_styles2docx.py` for one volume, gating on the missed-milestone count parsed from the
+  run's `workspace/logs/kama-vol-NNN-missed-ms.log` summary line (proceeds only if
+  `count <= --threshold`). Shells out to both scripts (so they stay untouched); owns `-v`,
+  `--threshold`, `-a/-m/-t`, `-n/--dry-run`, and forwards everything after `--` to
+  `insert_milestones.py`. Stages `*-pgd.txt` into `workspace/stage` (not `in/`) to keep
+  `in/bak` pristine, backs them up to `out/bak`, and leaves only the final `.docx` in `out/`.
 - `insert_milestones.py` — fuzzy-matches OCR line beginnings against converted Unicode
   chunk files to insert `[page.line]` milestones. Core logic; uses the two classes below.
 - `tibtexts/ocrvol.py` (`OCRVol`) — iterator over an OCR volume's lines, yielding cleaned

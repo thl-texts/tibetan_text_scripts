@@ -48,6 +48,49 @@ Other options include:
 * `-c` Clear files from in and out folders and copy in new raw chunk files for the volume in question, 
 * `-d` turn on debugging.
 
+### Running both steps at once with `process_volume.py`
+
+`process_volume.py` runs the two steps above (insert milestones, then add styles) as a single
+command, with a safety gate in between. It runs `insert_milestones.py`, reads how many
+milestones were *not* inserted from the run's `workspace/logs/kama-vol-NNN-missed-ms.log`, and
+only proceeds to styling if that count is at or below a threshold you set. If too many were
+missed, it stops so you can fix the volume and rerun — without producing styled docs you'd just
+throw away.
+
+As before, first copy the volume's chunked files into `workspace/in`. Then run, for example:
+
+```
+python process_volume.py -v 66 --threshold 25 -a -m -- -s 5
+```
+
+This processes volume 66 (starting on scan page 5), proceeds to styling only if 25 or fewer
+milestones were missed, and applies the annotation (`-a`) and milestone (`-m`) styles.
+
+The arguments split into two groups:
+
+* **Owned by `process_volume.py`** (before the `--`):
+    * `-v` the volume number (also passed on to `insert_milestones.py`),
+    * `--threshold` the maximum number of missed milestones that still allows styling to
+      proceed (default `50`),
+    * `-a`, `-m`, `-t` the styling options handed to `add_styles2docx.py` (annotations,
+      milestones, metadata table — same as running that script directly),
+    * `-n` / `--dry-run` run the milestone insertion and report the missed count, but stop
+      before staging and styling. Useful as a first pass to check a volume.
+* **Forwarded to `insert_milestones.py`** (everything after the `--`): the milestone
+  arguments such as `-s` (start page), `-b`, `-br`, `-c`, `-d`. Do **not** put `-v` here;
+  `process_volume.py` supplies it. For example, `-- -s 5 -b 12,13`.
+
+**What it does with the files.** Rather than reusing `workspace/in`, the script copies the
+milestoned `*-pgd.txt` files into a separate `workspace/stage` folder and runs styling from
+there. This keeps `workspace/in/bak` — the original Word docs that `insert_milestones.py` backs
+up — untouched, so they remain a clean restore set if you need to rerun. The `*-pgd.txt` files
+are also copied to `workspace/out/bak` for safekeeping and then removed from the top level of
+`workspace/out`, so when the run finishes only the final styled `*-pgd.docx` documents are left
+at the top of `workspace/out`.
+
+If you prefer to run and check each step by hand, the two scripts above still work exactly as
+before; `process_volume.py` is just a convenience wrapper around them.
+
 ## Overall Process for Conversion of Sambhota Files
 
 The conversion process is a multi-stepped process that requires both a Mac and a Windows machine to proceed 
