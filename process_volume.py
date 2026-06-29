@@ -32,6 +32,8 @@ import shutil
 import subprocess
 import sys
 
+import diagnose_log
+
 # Anchor every path on this script's own location so the orchestrator works
 # regardless of the current working directory. The sibling scripts, however,
 # use hard-coded ``./tibetan_text_scripts/...`` paths, so we launch them with
@@ -153,6 +155,12 @@ def main(argv):
     if missed > args.threshold:
         print("Over threshold -- stopping. Fix the volume and rerun; "
               "originals remain in workspace/in/bak.")
+        print()
+        logpath = diagnose_log.find_main_log(LOGDIR, volfile)
+        if logpath is None:
+            print("(No run log found to diagnose where the misses start.)")
+        else:
+            print(diagnose_log.diagnose(logpath))
         return 1
 
     if args.dry_run:

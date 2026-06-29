@@ -63,6 +63,19 @@ the per-run logs in `workspace/logs/`.
   `--threshold`, `-a/-m/-t`, `-n/--dry-run`, and forwards everything after `--` to
   `insert_milestones.py`. Stages `*-pgd.txt` into `workspace/stage` (not `in/`) to keep
   `in/bak` pristine, backs them up to `out/bak`, and leaves only the final `.docx` in `out/`.
+  When the missed count is over `--threshold` it prints a `diagnose_log.py` report (below)
+  pointing at where the run started consistently missing, then stops.
+- `diagnose_log.py` — read-only analyzer for a milestone run that went over threshold. Parses
+  the timestamped run log (`workspace/logs/kama-vol-NNN-<datetime>.log`, *not* the
+  `-missed-ms.log` summary) into per-milestone records — header `Milestone: [p.l] (Curr pg: N,
+  Curr Doc: doc)`, plus the hit (`Text chunk: …#$#$#$#…`) or miss (`!!! Milestone … not found
+  (scanpg.ln) for: … !!!` + `Doc text area:`) lines that follow. Groups misses into sustained
+  failure regions (small-gap tolerant, so a recovered wobble stays separate), then reports the
+  first symptom and the largest region's onset: milestone page number, scan page, Word doc, the
+  OCR line it sought, where the Unicode doc was stuck, and the last milestone placed before the
+  drift. Run standalone: `python diagnose_log.py -v 67` (or pass a log path). NB: the header
+  line is only written when insert_milestones runs with debug on (it does by default here); the
+  miss lines are always written. Never modifies the log.
 - `insert_milestones.py` — fuzzy-matches OCR line beginnings against converted Unicode
   chunk files to insert `[page.line]` milestones. Core logic; uses the two classes below.
   Its `-c/--clear` flag resets the workspace for a *re-run* (recoverable): clears `out/`

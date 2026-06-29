@@ -55,7 +55,8 @@ command, with a safety gate in between. It runs `insert_milestones.py`, reads ho
 milestones were *not* inserted from the run's `workspace/logs/kama-vol-NNN-missed-ms.log`, and
 only proceeds to styling if that count is at or below a threshold you set. If too many were
 missed, it stops so you can fix the volume and rerun — without producing styled docs you'd just
-throw away.
+throw away. When it stops, it also prints a diagnosis of *where* the run started consistently
+missing (see "Diagnosing a failed run" below), so you know where to look.
 
 As before, first copy the volume's chunked files into `workspace/in`. Then run, for example:
 
@@ -90,6 +91,27 @@ at the top of `workspace/out`.
 
 If you prefer to run and check each step by hand, the two scripts above still work exactly as
 before; `process_volume.py` is just a convenience wrapper around them.
+
+### Diagnosing a failed run with `diagnose_log.py`
+
+When a volume comes back with thousands of missed milestones, it is almost always because the
+fuzzy matcher drifted off a single bad line and then could not re-anchor — once it loses its
+place it keeps failing for the rest of the document, so one bad spot cascades into the whole
+remainder of the volume. `diagnose_log.py` reads the run log and pinpoints that spot.
+
+`process_volume.py` runs it for you whenever a run goes over `--threshold`, but you can also run
+it by hand against any run log:
+
+```
+python diagnose_log.py -v 67
+```
+
+(or pass a specific log file path instead of `-v`). It reports the first miss it saw (the
+"first symptom"), then the start of the largest sustained run of misses — the milestone page
+number, the OCR scan page, the Word doc involved, the OCR line it was trying to place, the spot
+in the Unicode document where it was stuck, and the last milestone it placed correctly before
+the drift. Together these tell you which page of which document to compare against the OCR. The
+script only reads the log; it never changes it.
 
 ## Overall Process for Conversion of Sambhota Files
 
