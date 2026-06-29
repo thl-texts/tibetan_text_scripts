@@ -65,6 +65,16 @@ the per-run logs in `workspace/logs/`.
   `in/bak` pristine, backs them up to `out/bak`, and leaves only the final `.docx` in `out/`.
 - `insert_milestones.py` — fuzzy-matches OCR line beginnings against converted Unicode
   chunk files to insert `[page.line]` milestones. Core logic; uses the two classes below.
+  Its `-c/--clear` flag resets the workspace for a *re-run* (recoverable): clears `out/`
+  and `in/temp`, clears the top level of `in/`, then restores the originals from `in/bak`
+  so the conversion can run again. (To wipe everything instead, use `clear_all.py`.)
+- `clear_all.py` — standalone, destructive workspace reset for starting a fresh volume:
+  recursively deletes all non-hidden files in `workspace/in` and `workspace/out` (incl.
+  their `bak/` and `temp/`), leaving the folder structure and hidden files (`.DS_Store`).
+  Resolves `workspace` relative to its own file, so it runs from any cwd (no parent-dir
+  assumption). Prompts for a capital-`Y` confirmation; `-y/--yes` skips it, `-w/--workspace`
+  overrides the path. Intentionally separate from `insert_milestones.py` because it reads
+  nothing and is not recoverable, unlike `-c/--clear`.
 - `tibtexts/ocrvol.py` (`OCRVol`) — iterator over an OCR volume's lines, yielding cleaned
   line-beginning fragments and computing milestone numbers (handles `startat`, skipped
   blank pages, bad blanks).

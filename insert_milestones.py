@@ -47,27 +47,15 @@ def delete_files_in(dirpath, recurse=False):
     return count
 
 
-def clear_files(clear_all=False):
+def clear_files():
     '''
-    Clean up the workspace folders. With clear_all=True, remove everything from workspace/in and
-    workspace/out (including their bak and temp subfolders). Otherwise reset to rerun the script:
-    clear workspace/out, clear workspace/in/temp and the top level of workspace/in, then restore the
-    original Word docs from workspace/in/bak back into workspace/in.
-    :param clear_all: bool
+    Reset the workspace to rerun the script: clear workspace/out, clear workspace/in/temp and the
+    top level of workspace/in, then restore the original Word docs from workspace/in/bak back into
+    workspace/in. (To delete everything, bak included, use the standalone clear_all.py script.)
     :return: None
     '''
     indir = join(workspace, 'in')
     outdir = join(workspace, 'out')
-
-    if clear_all:
-        resp = input("Are you sure you want to DELETE ALL files in workspace/in and workspace/out, \n"
-                     "including their bak and temp folders? This cannot be undone (Y/n)? ")
-        if resp != 'Y':
-            print("Aborted.")
-            return
-        removed = delete_files_in(indir, recurse=True) + delete_files_in(outdir, recurse=True)
-        print("Cleared {} file(s) from workspace/in and workspace/out.".format(removed))
-        return
 
     resp = input("Reset workspace to rerun? This clears workspace/out, workspace/in/temp and the top \n"
                  "level of workspace/in, then restores originals from workspace/in/bak (Y/n)? ")
@@ -391,9 +379,7 @@ parser.add_argument('-o', '--out', default='./tibetan_text_scripts/workspace/out
                     help='The Out Directory with the files')
 parser.add_argument('-c', '--clear', action='store_true',
                     help='Reset workspace to rerun: clear out/ and in/temp, clear top-level in/, '
-                         'and restore originals from in/bak'),
-parser.add_argument('-ca', '--clear-all', action='store_true',
-                    help='Delete ALL files in workspace in/ and out/ (including bak and temp folders)'),
+                         'and restore originals from in/bak (to wipe everything, use clear_all.py)'),
 parser.add_argument('-d', '--debug', action='store_true',
                     help='Print debugging information')
 parser.add_argument('-ds', '--debugstart', default=1,
@@ -448,10 +434,8 @@ if __name__ == "__main__":
     logging.basicConfig(filename='{}/logs/{}-{}.log'.format(workspace, volfile, currdt), filemode='w',
                         format='(%(levelname)s) %(message)s', level=logging.DEBUG)
 
-    if kwargs['clear_all']:
-        clear_files(clear_all=True)
-    elif kwargs['clear']:
-        clear_files(clear_all=False)
+    if kwargs['clear']:
+        clear_files()
     blanks = [] if not kwargs['blank'] else kwargs['blank'].split(',')
     breaks = [] if not kwargs['break'] else kwargs['break'].split(',')
     do_insertions(indir, outdir, volfile, startpg, blanks, breaks)
