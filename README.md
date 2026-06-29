@@ -113,6 +113,30 @@ in the Unicode document where it was stuck, and the last milestone it placed cor
 the drift. Together these tell you which page of which document to compare against the OCR. The
 script only reads the log; it never changes it.
 
+### Fixing OCR page numbers with `renumber_ocr_pages.py`
+
+The most common cause of a sudden cascade of misses is the OCR itself: a scan went missing, got
+repeated, or landed out of order, so the page numbers in the OCR no longer line up with the text
+(milestone numbers are derived from the OCR page numbers, so once they slip, everything after
+drifts). The OCR is plain text where each page starts with a header line such as
+`tbocrtifs/kama_vol_067/out_0071.tif`.
+
+To fix it, hand-edit the affected stretch in the OCR file: splice in any missing page's text and
+mark each inserted page with a placeholder header (`first page`, `second page`, …), and delete
+any repeated page. Then renumber every header from the last known-good page through to the end:
+
+```
+python renumber_ocr_pages.py kama-vol-067.txt
+```
+
+This rewrites both the real `out_NNNN.tif` headers and the placeholder markers into one clean,
+contiguous sequence, copying the path prefix and zero-padding from the first real header in the
+file. By default it starts from the first header's own number; use `-s` to set a different start,
+`-m "marker text"` to recognise other placeholder lines, and `-n` for a dry run that just reports
+the changes. It reads the input read-only and writes a `-fixed` copy alongside it; paste the
+corrected stretch back into the main OCR volume, then rerun `process_volume.py` (forward `-c` to
+`insert_milestones.py` to restore the original Word docs from `workspace/in/bak` and reconvert).
+
 ## Overall Process for Conversion of Sambhota Files
 
 The conversion process is a multi-stepped process that requires both a Mac and a Windows machine to proceed 

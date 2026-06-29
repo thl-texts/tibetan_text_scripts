@@ -96,6 +96,15 @@ the per-run logs in `workspace/logs/`.
 - `add_styles2docx.py` — copies paragraphs from plain `.docx` files into the THL styled
   template (`resources/tibtext-styled-tpl-2023-09-26.docx`), optionally applying
   Annotations style (text between `«` `»`), milestone styles, and the metadata table.
+- `renumber_ocr_pages.py` — renumbers the `tbocrtifs/.../out_NNNN.tif` page headers in a
+  plain-text OCR volume into a clean contiguous sequence. Used after hand-fixing a stretch of
+  OCR where scans were missing/repeated/misordered (splice missing pages in as marker lines
+  like `first page`/`second page`, delete repeats, then renumber from a known-good start to the
+  end). Treats both real tif headers and the marker lines as headers; copies the prefix/suffix/
+  pad-width from the first tif header so it isn't volume-specific. Reads input read-only, writes
+  a `-fixed` copy. `-s` sets the start page, `-m` adds marker strings, `-n` dry-runs. Fixing the
+  OCR page numbers is the upstream fix for the drift `diagnose_log.py` surfaces, since
+  `insert_milestones` keys milestone numbers off the OCR page numbers.
 - `adjust_pg_nums.py` — shifts page/line milestone numbers in a range within a doc.
 - `split_into_texts_delim.py` / `split_into_text_spread.py` — split a volume into texts on
   a delimiter (the README notes this approach is unreliable).
