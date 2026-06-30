@@ -7,7 +7,6 @@ class OCRVol:
         Used to find page and line breaks in existing texts
     """
     LINE_FRAG_SYLLABLES = 5
-    lines = []
 
     def __init__(self, path, startat=0, skips=[], translen=10, maxskips=10, badblanks=[]):
         self.inpath = path
@@ -21,6 +20,7 @@ class OCRVol:
         self.badblanks = badblanks
         self.maxskips = maxskips * 7  # maxskips given is number of pages, multiply by 7 to get rough number of lines
         self.translen = translen
+        self.lines = []
         pgnm = '0'
         lnnm = 0
         self.startn = -1

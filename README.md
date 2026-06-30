@@ -48,6 +48,95 @@ Other options include:
 * `-c` Clear files from in and out folders and copy in new raw chunk files for the volume in question, 
 * `-d` turn on debugging.
 
+### Running both steps at once with `process_volume.py`
+
+`process_volume.py` runs the two steps above (insert milestones, then add styles) as a single
+command, with a safety gate in between. It runs `insert_milestones.py`, reads how many
+milestones were *not* inserted from the run's `workspace/logs/kama-vol-NNN-missed-ms.log`, and
+only proceeds to styling if that count is at or below a threshold you set. If too many were
+missed, it stops so you can fix the volume and rerun — without producing styled docs you'd just
+throw away. When it stops, it also prints a diagnosis of *where* the run started consistently
+missing (see "Diagnosing a failed run" below), so you know where to look.
+
+As before, first copy the volume's chunked files into `workspace/in`. Then run, for example:
+
+```
+python process_volume.py -v 66 --threshold 25 -a -m -- -s 5
+```
+
+This processes volume 66 (starting on scan page 5), proceeds to styling only if 25 or fewer
+milestones were missed, and applies the annotation (`-a`) and milestone (`-m`) styles.
+
+The arguments split into two groups:
+
+* **Owned by `process_volume.py`** (before the `--`):
+    * `-v` the volume number (also passed on to `insert_milestones.py`),
+    * `--threshold` the maximum number of missed milestones that still allows styling to
+      proceed (default `50`),
+    * `-a`, `-m`, `-t` the styling options handed to `add_styles2docx.py` (annotations,
+      milestones, metadata table — same as running that script directly),
+    * `-n` / `--dry-run` run the milestone insertion and report the missed count, but stop
+      before staging and styling. Useful as a first pass to check a volume.
+* **Forwarded to `insert_milestones.py`** (everything after the `--`): the milestone
+  arguments such as `-s` (start page), `-b`, `-br`, `-c`, `-d`. Do **not** put `-v` here;
+  `process_volume.py` supplies it. For example, `-- -s 5 -b 12,13`.
+
+**What it does with the files.** Rather than reusing `workspace/in`, the script copies the
+milestoned `*-pgd.txt` files into a separate `workspace/stage` folder and runs styling from
+there. This keeps `workspace/in/bak` — the original Word docs that `insert_milestones.py` backs
+up — untouched, so they remain a clean restore set if you need to rerun. The `*-pgd.txt` files
+are also copied to `workspace/out/bak` for safekeeping and then removed from the top level of
+`workspace/out`, so when the run finishes only the final styled `*-pgd.docx` documents are left
+at the top of `workspace/out`.
+
+If you prefer to run and check each step by hand, the two scripts above still work exactly as
+before; `process_volume.py` is just a convenience wrapper around them.
+
+### Diagnosing a failed run with `diagnose_log.py`
+
+When a volume comes back with thousands of missed milestones, it is almost always because the
+fuzzy matcher drifted off a single bad line and then could not re-anchor — once it loses its
+place it keeps failing for the rest of the document, so one bad spot cascades into the whole
+remainder of the volume. `diagnose_log.py` reads the run log and pinpoints that spot.
+
+`process_volume.py` runs it for you whenever a run goes over `--threshold`, but you can also run
+it by hand against any run log:
+
+```
+python diagnose_log.py -v 67
+```
+
+(or pass a specific log file path instead of `-v`). It reports the first miss it saw (the
+"first symptom"), then the start of the largest sustained run of misses — the milestone page
+number, the OCR scan page, the Word doc involved, the OCR line it was trying to place, the spot
+in the Unicode document where it was stuck, and the last milestone it placed correctly before
+the drift. Together these tell you which page of which document to compare against the OCR. The
+script only reads the log; it never changes it.
+
+### Fixing OCR page numbers with `renumber_ocr_pages.py`
+
+The most common cause of a sudden cascade of misses is the OCR itself: a scan went missing, got
+repeated, or landed out of order, so the page numbers in the OCR no longer line up with the text
+(milestone numbers are derived from the OCR page numbers, so once they slip, everything after
+drifts). The OCR is plain text where each page starts with a header line such as
+`tbocrtifs/kama_vol_067/out_0071.tif`.
+
+To fix it, hand-edit the affected stretch in the OCR file: splice in any missing page's text and
+mark each inserted page with a placeholder header (`first page`, `second page`, …), and delete
+any repeated page. Then renumber every header from the last known-good page through to the end:
+
+```
+python renumber_ocr_pages.py kama-vol-067.txt
+```
+
+This rewrites both the real `out_NNNN.tif` headers and the placeholder markers into one clean,
+contiguous sequence, copying the path prefix and zero-padding from the first real header in the
+file. By default it starts from the first header's own number; use `-s` to set a different start,
+`-m "marker text"` to recognise other placeholder lines, and `-n` for a dry run that just reports
+the changes. It reads the input read-only and writes a `-fixed` copy alongside it; paste the
+corrected stretch back into the main OCR volume, then rerun `process_volume.py` (forward `-c` to
+`insert_milestones.py` to restore the original Word docs from `workspace/in/bak` and reconvert).
+
 ## Overall Process for Conversion of Sambhota Files
 
 The conversion process is a multi-stepped process that requires both a Mac and a Windows machine to proceed 
