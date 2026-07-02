@@ -127,6 +127,27 @@ def stage_milestoned_files():
     return len(pgd_files)
 
 
+def count_output_milestones():
+    """Tally the milestoned output for the final summary.
+
+    Reads the staged ``*-pgd.txt`` files and returns ``(inserted, pages)`` where
+    ``inserted`` is the number of line milestones (``[p.l]``) actually placed --
+    the same unit as the missed-milestone count -- and ``pages`` is the highest
+    page number seen across page (``[p]``) and line (``[p.l]``) milestones, i.e.
+    the volume's last/total page. Call this while the staged files are still in
+    workspace/stage; add_styles moves them into stage/bak as it runs.
+    """
+    inserted = 0
+    max_page = 0
+    for f in glob.glob(os.path.join(STAGEDIR, '*-pgd.txt')):
+        with open(f, encoding='utf-8') as fh:
+            text = fh.read()
+        inserted += len(re.findall(r'\[\d+\.\d+\]', text))
+        for p in re.findall(r'\[(\d+)(?:\.\d+)?\]', text):
+            max_page = max(max_page, int(p))
+    return inserted, max_page
+
+
 def main(argv):
     args = parse_args(argv)
 
@@ -168,9 +189,14 @@ def main(argv):
         return 0
 
     # --- Stage 2: stage files and run add_styles -------------------------
-    if stage_milestoned_files() == 0:
+    staged = stage_milestoned_files()
+    if staged == 0:
         print("Nothing to style; aborting.")
         return 1
+
+    # Count now, while the staged *-pgd.txt files are still in workspace/stage;
+    # add_styles moves them into stage/bak as it runs.
+    inserted, pages = count_output_milestones()
 
     style_flags = []
     if args.annotations:
@@ -184,7 +210,10 @@ def main(argv):
         print("\nadd_styles2docx.py failed.")
         return 1
 
-    print("\nDone. Styled documents are in {}.".format(OUTDIR))
+    print("\nMilestones inserted and styles added to {} document(s). "
+          "{} total pages. {} out of a total of {} milestones missed.".format(
+              staged, pages, missed, inserted))
+    print("Styled documents are in {}.".format(OUTDIR))
     return 0
 
 
