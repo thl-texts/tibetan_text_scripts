@@ -104,8 +104,25 @@ the per-run logs in `workspace/logs/`.
   pad-width from the first tif header so it isn't volume-specific. Reads input read-only, writes
   a `-fixed` copy. `-s` sets the start page, `-m` adds marker strings, `-n` dry-runs. Fixing the
   OCR page numbers is the upstream fix for the drift `diagnose_log.py` surfaces, since
-  `insert_milestones` keys milestone numbers off the OCR page numbers.
-- `adjust_pg_nums.py` — shifts page/line milestone numbers in a range within a doc.
+  `insert_milestones` keys milestone numbers off the OCR page numbers. Use this for an
+  *absolute* renumber (discard the old numbers, stamp a fresh contiguous run from `-s` to EOF);
+  use `adjust_ocr_pgnums.py` (below) for a *relative* shift that keeps the old numbers.
+- `adjust_ocr_pgnums.py` — the OCR-header analog of `adjust_pg_nums.py`: adds `-d/--delta`
+  (may be negative) to the image number of every `out_NNNN.tif` header whose current number is
+  in the `[-s, -e]` range, rewriting the volume in place. Builds the file name from `-v`
+  (`kama-vol-NNN.txt`) and looks it up in the OCR dir (`-p` overrides; default matches
+  `insert_milestones.py`'s `ocrfolder`). The range is keyed on the headers' *existing* numbers,
+  not their position, so `-s 601` means "start at the header currently numbered `out_0601.tif`";
+  omit `-s`/`-e` for first/last. Unlike `renumber_ocr_pages.py` it preserves the numbers and only
+  slides the selected window (intentional gaps outside the range survive), so it's for "a splice
+  upstream left everything from page N off by a constant". Backs up to `-bak` (timestamped if a
+  backup already exists) before writing; `-n` dry-runs; warns (doesn't block) if the shift leaves
+  duplicate header numbers, and refuses a delta that would make a number negative. A header whose
+  number part isn't all digits (e.g. `out_XXXX.tif`) is treated as a *placeholder* for a page
+  awaiting its real number: it's skipped by the shift (so an unbounded `-s N` won't disturb it —
+  no need to bound with `-e`) and reported as a reminder to rename it by hand afterward.
+- `adjust_pg_nums.py` — shifts page/line milestone numbers in a range within a styled `.docx`
+  (the `[p.l]` milestones, not OCR headers; `adjust_ocr_pgnums.py` is the OCR-side counterpart).
 - `split_into_texts_delim.py` / `split_into_text_spread.py` — split a volume into texts on
   a delimiter (the README notes this approach is unreliable).
 - Other top-level scripts (`check_for_missing.py`, `find-bad-vol-pages.py`,

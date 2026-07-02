@@ -137,6 +137,36 @@ the changes. It reads the input read-only and writes a `-fixed` copy alongside i
 corrected stretch back into the main OCR volume, then rerun `process_volume.py` (forward `-c` to
 `insert_milestones.py` to restore the original Word docs from `workspace/in/bak` and reconvert).
 
+### Shifting a range of OCR page numbers with `adjust_ocr_pgnums.py`
+
+`renumber_ocr_pages.py` throws the old numbers away and stamps a fresh contiguous sequence, which
+is what you want after a messy hand-edit. When the fix is simpler — a single splice or deletion
+upstream has left **every** header from some page on off by a constant amount — you often just want
+to slide a range up or down without renumbering the whole file. `adjust_ocr_pgnums.py` does that:
+
+```
+python adjust_ocr_pgnums.py -v 67 -d 1 -s 601        # +1 to out_0601.tif through the end
+python adjust_ocr_pgnums.py -v 67 -d -2 -s 601 -e 650 # -2 to out_0601.tif .. out_0650.tif
+python adjust_ocr_pgnums.py -v 67 -d 1 -s 601 -n      # dry run, just report the changes
+```
+
+It builds the file name from the volume number (`-v 67` → `kama-vol-067.txt`) and finds it in the
+OCR directory (`-p` overrides the default). `-d/--delta` is the amount to add (negative to
+subtract). The `-s`/`-e` range is matched against the headers' **existing** image numbers, so
+`-s 601` means "start at the header currently numbered `out_0601.tif`"; omit `-s` to begin at the
+first page and `-e` to run through the last. It backs the volume up to a `-bak` copy (timestamped
+if one already exists) before editing in place, dry-runs with `-n`, and warns if the shift would
+leave two headers with the same number (a sign the range boundary overlaps pages it shouldn't).
+This is the OCR-header counterpart of `adjust_pg_nums.py`, which shifts the `[p.l]` milestones
+inside an already-styled Word doc.
+
+When you splice a missing page in, give it a **non-numeric placeholder header** like
+`tbocrtifs/kama_vol_067/out_XXXX.tif` instead of a real number. The shift ignores any header whose
+number part isn't all digits, so an unbounded `-s 360` slides everything from 360 to the end up by
+one *without* disturbing the placeholder — no `-e` needed to protect it. The script reports the
+ignored placeholder as a reminder; once the surrounding pages are renumbered, rename the
+placeholder by hand to the number that now fits the gap.
+
 ## Overall Process for Conversion of Sambhota Files
 
 The conversion process is a multi-stepped process that requires both a Mac and a Windows machine to proceed 
