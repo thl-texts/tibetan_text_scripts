@@ -13,6 +13,10 @@ run directly from the command line for a specific step of the workflow.
 See `README.md` for the prose description of the conversion and milestone-insertion
 processes; this file captures the things that aren't obvious from the README.
 
+See `SESSION_LOG.md` for a running log of notable Claude Code sessions (fixes,
+decisions, in-progress work) — check it for context when starting work here on a
+different machine, and add an entry after a substantive session.
+
 ## Running scripts
 
 Scripts use `argparse` and are run directly, e.g.:
