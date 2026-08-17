@@ -22,7 +22,7 @@ unidocs = []
 avg_ln_len = 0
 pgs_to_skip = list()
 workspace = './tibetan_text_scripts/workspace'
-ocrfolder = '/Users/thangrove/Documents/thl/catalogs/tibetan_text_scripts/workspace/ocr' #'./tibetan_text_scripts/resources/ocr'
+ocrfolder = './tibetan_text_scripts/workspace/ocr' #'./tibetan_text_scripts/resources/ocr'
 
 
 def delete_files_in(dirpath, recurse=False):
