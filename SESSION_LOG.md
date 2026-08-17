@@ -5,6 +5,31 @@ between machines. Newest entries first. Add a new entry when a session makes a
 substantive fix, decision, or leaves something in-progress worth knowing about;
 skip trivial sessions.
 
+## 2026-08-17 — ocrfolder finalized, SESSION_LOG.md added, clear_all.py covers stage/
+
+Follow-on to the session below, same day.
+
+- **`insert_milestones.py`**: `ocrfolder` settled on a relative path,
+  `./tibetan_text_scripts/workspace/ocr`, matching the `workspace =
+  './tibetan_text_scripts/workspace'` convention right above it (superseding
+  the absolute-path version from the prior entry). Committed as `ff07857`.
+
+- Added this file (`SESSION_LOG.md`) and pointed to it from `CLAUDE.md`, so a
+  Claude session on another of the user's machines can pick up prior-session
+  context. Committed as `8ad8b17`.
+
+- **`clear_all.py`** only cleared `workspace/in` and `workspace/out`, missing
+  `workspace/stage` — the directory `process_volume.py` uses to stage
+  milestoned `*-pgd.txt` files between its two pipeline steps (see
+  `CLAUDE.md`'s description of `process_volume.py`). A fresh-volume clear was
+  leaving stale `stage/bak` files behind from the previous volume. Updated
+  `delete_files_in`/`clear_all()` to also recurse into `stage`, and updated the
+  docstring, confirmation prompt, and `CLAUDE.md`'s description to match.
+  Verified with a live run (cleared 12 leftover files from vol-068's stage/bak).
+  Committed as `2d4f54f`.
+
+- All three pushed to `origin/master`.
+
 ## 2026-08-17 — Hidden page milestones, Jomolhari-ID font leak, ocrfolder path
 
 Working volume: `kama-vol-068`, run via `process_volume.py` for the first time on
