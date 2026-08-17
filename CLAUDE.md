@@ -86,8 +86,9 @@ the per-run logs in `workspace/logs/`.
   and `in/temp`, clears the top level of `in/`, then restores the originals from `in/bak`
   so the conversion can run again. (To wipe everything instead, use `clear_all.py`.)
 - `clear_all.py` — standalone, destructive workspace reset for starting a fresh volume:
-  recursively deletes all non-hidden files in `workspace/in` and `workspace/out` (incl.
-  their `bak/` and `temp/`), leaving the folder structure and hidden files (`.DS_Store`).
+  recursively deletes all non-hidden files in `workspace/in`, `workspace/out`, and
+  `workspace/stage` (incl. their `bak/` and `temp/`), leaving the folder structure and
+  hidden files (`.DS_Store`).
   Resolves `workspace` relative to its own file, so it runs from any cwd (no parent-dir
   assumption). Prompts for a capital-`Y` confirmation; `-y/--yes` skips it, `-w/--workspace`
   overrides the path. Intentionally separate from `insert_milestones.py` because it reads

@@ -1,9 +1,9 @@
 """
 Clear out the workspace to start a fresh volume.
 
-Recursively deletes every (non-hidden) file in workspace/in and workspace/out,
-including their bak/ and temp/ subfolders. The folder structure is left in place;
-hidden files (e.g. .DS_Store) are left alone.
+Recursively deletes every (non-hidden) file in workspace/in, workspace/out, and
+workspace/stage, including their bak/ and temp/ subfolders. The folder structure
+is left in place; hidden files (e.g. .DS_Store) are left alone.
 
 This is destructive and cannot be undone. Back up anything you need (the originals
 in workspace/in/bak included) before running. To reset for a *re-run* of the same
@@ -48,32 +48,36 @@ def delete_files_in(dirpath, recurse=False):
 
 def clear_all(workspace, assume_yes=False):
     '''
-    Delete all non-hidden files in workspace/in and workspace/out (including bak and temp).
+    Delete all non-hidden files in workspace/in, workspace/out, and workspace/stage
+    (including bak and temp).
     :param workspace: str path to the workspace folder
     :param assume_yes: bool skip the confirmation prompt
     :return: int Count of files removed (0 if aborted)
     '''
     indir = join(workspace, 'in')
     outdir = join(workspace, 'out')
+    stagedir = join(workspace, 'stage')
 
-    if not exists(indir) and not exists(outdir):
-        print("Neither {} nor {} exists; nothing to clear.".format(indir, outdir))
+    if not exists(indir) and not exists(outdir) and not exists(stagedir):
+        print("None of {}, {}, or {} exist; nothing to clear.".format(indir, outdir, stagedir))
         return 0
 
     if not assume_yes:
-        resp = input("Are you sure you want to DELETE ALL files in {} and {}, \n"
-                     "including their bak and temp folders? This cannot be undone (Y/n)? ".format(indir, outdir))
+        resp = input("Are you sure you want to DELETE ALL files in {}, {}, and {}, \n"
+                     "including their bak and temp folders? This cannot be undone (Y/n)? ".format(
+                         indir, outdir, stagedir))
         if resp != 'Y':
             print("Aborted.")
             return 0
 
-    removed = delete_files_in(indir, recurse=True) + delete_files_in(outdir, recurse=True)
-    print("Cleared {} file(s) from {} and {}.".format(removed, indir, outdir))
+    removed = (delete_files_in(indir, recurse=True) + delete_files_in(outdir, recurse=True)
+               + delete_files_in(stagedir, recurse=True))
+    print("Cleared {} file(s) from {}, {}, and {}.".format(removed, indir, outdir, stagedir))
     return removed
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Clear all files from workspace/in and workspace/out to start a fresh volume.")
+    parser = argparse.ArgumentParser(description="Clear all files from workspace/in, workspace/out, and workspace/stage to start a fresh volume.")
     parser.add_argument('-w', '--workspace', default=DEFAULT_WORKSPACE,
                         help='Path to the workspace folder (default: the workspace next to this script)')
     parser.add_argument('-y', '--yes', action='store_true',
