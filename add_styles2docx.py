@@ -3,6 +3,7 @@ import shutil
 import glob
 from docx import Document
 from docx.shared import Pt
+from docx.oxml.ns import qn
 import argparse
 
 HOMEDIR = './tibetan_text_scripts'
@@ -246,6 +247,14 @@ def set_tib_font(doc):
             r.font.complex_script = True
             r.font.name = "Jomolhari"
             r.font.size = Pt(16)
+            # Font.name only sets rFonts@ascii/@hAnsi; Tibetan renders from the
+            # complex-script (cs) slot in Word, so it must be set explicitly.
+            rpr = r._element.get_or_add_rPr()
+            rfonts = rpr.find(qn('w:rFonts'))
+            if rfonts is None:
+                rfonts = rpr.makeelement(qn('w:rFonts'), {})
+                rpr.insert(0, rfonts)
+            rfonts.set(qn('w:cs'), "Jomolhari")
 
 
 def convert_files(ind, outd, table, annots, milestones):
