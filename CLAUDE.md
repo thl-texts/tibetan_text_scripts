@@ -48,7 +48,10 @@ the per-run logs in `workspace/logs/`.
   don't assume the defaults work.
 - **macOS-only steps.** Conversion relies on the macOS `textutil` command (`.doc`↔`.rtf`↔
   `.docx`↔`.txt`) and the shell scripts in `shell_scripts/`. The Sambhota→Unicode step
-  itself runs on Windows via `udp.exe` (`shell_scripts/convertSamRTF.bat`).
+  itself runs on Windows via `udp.exe` (`shell_scripts/convertSamRTF.bat`) — a third-party
+  binary (UDP, Unicode Data Processor) not vendored in this repo; get it from
+  https://leighb.com/udp/, default install path `c:\unicdocp\udp.exe` matches what the
+  `.bat` expects.
 - **In/out folder convention.** Most scripts read from a `workspace/in` folder and write to
   `workspace/out`, moving originals into a `bak/` subfolder and using `temp/` for
   intermediates. The `workspace/` tree is gitignored, as are `resources/ocr/`,

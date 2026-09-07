@@ -179,8 +179,10 @@ name, then the steps in the process are:
 2. Run `doc2rtf.sh in out` - this converts the .doc files to .rtf and puts in the `out` folder
 3. Transfer to Windows machine (Upload to UVA Box and then download to Windows Virtual machine), putting them 
 in the `in` folder
-4. Run the batch script `convertSamRTF.bat`. This will use UDP to convert the Sambhota files to Unicode 
-and will put the converted Unicode files in the `out` folder
+4. Run the batch script `convertSamRTF.bat`. This will use UDP (Unicode Data Processor, downloadable from
+[https://leighb.com/udp/](https://leighb.com/udp/); installed by default at `c:\unicdocp\udp.exe`, which is
+the path `convertSamRTF.bat` expects) to convert the Sambhota files to Unicode and will put the converted
+Unicode files in the `out` folder
     * Make sure that in UDP Advance settings you click the box "Put smaller font between « and »"
 5. Transfer the unicode RTF files to the `in` folder on the Mac machine
 6. Run the `rtf2docx.sh in out` script, which converts the files to `.docx` format and puts them in the `out` folder. 
