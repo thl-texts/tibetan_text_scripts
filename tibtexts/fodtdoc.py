@@ -71,6 +71,7 @@ class FodtDoc:
         conversion waiting on a shared user-profile lock. Returns a FodtDoc wrapping the result.
         """
         soffice = find_soffice()
+        workdir = os.path.abspath(workdir)
         scratch = join(workdir, 'lo-profile-{}'.format(uuid.uuid4().hex))
         outdir = join(workdir, 'fodt-out-{}'.format(uuid.uuid4().hex))
         os.makedirs(outdir, exist_ok=True)
@@ -79,7 +80,7 @@ class FodtDoc:
             '-env:UserInstallation=file://{}'.format(scratch),
             '--convert-to', 'fodt',
             '--outdir', outdir,
-            doc_path,
+            os.path.abspath(doc_path),
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
         stem = splitext(basename(doc_path))[0]
