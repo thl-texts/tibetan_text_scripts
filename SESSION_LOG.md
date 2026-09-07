@@ -5,6 +5,33 @@ between machines. Newest entries first. Add a new entry when a session makes a
 substantive fix, decision, or leaves something in-progress worth knowing about;
 skip trivial sessions.
 
+## 2026-09-07 — Dedris (Sambhota) → Unicode converter: design plan
+
+Assessed and designed a pure-Python replacement for the Windows/`udp.exe` leg of
+the Sambhota conversion pipeline, targeting the "Dedris" font family (Nitartha
+International, 1999) used by `KAMA-084-{e,f}.doc` (not yet converted). Full
+design doc: [`DEDRIS_CONVERSION_PLAN.md`](DEDRIS_CONVERSION_PLAN.md).
+
+Key findings: (1) `workspace/in/sambhota/KAMA-084-{a,b,c,d}.doc` (Sambhota
+originals) and `workspace/in/KAMA-084-{a,b,c,d}.docx` (already UDP-converted)
+form a ready-made parallel corpus — the byte→Unicode mapping can be learned
+empirically instead of sourced from documentation (none exists for Dedris).
+(2) The scheme uses at least 8 font names (not the 2 originally assumed),
+confirmed via LibreOffice headless flat-ODT export — `textutil`/Word silently
+substitutes Times New Roman for uninstalled fonts and is unusable for
+extraction; `soffice --headless --convert-to fodt` preserves the real
+per-character font-table names. (3) Characters are typed as one interleaved
+stream in reading order (base→subjoined→vowel), so this reduces to sequential
+token-substitution + syllable composition, closer to a Wylie/EWTS converter
+than a 2-D glyph-overlay problem.
+
+Plan: train a mapping table on `a`–`c`, validate against held-out `d`, then
+convert `e`/`f` — flagging any untranslatable token rather than guessing.
+User confirmed: proceed without the missing Dedris font files for now (only
+`Dedris-a`/`-a1`/`-vowa` are in `resources/fonts/`; the rest are on fontsgeek
+if needed later), and build the full general tool (not just a one-off for
+KAMA-084). Implementation not yet started as of this entry.
+
 ## 2026-08-17 — ocrfolder finalized, SESSION_LOG.md added, clear_all.py covers stage/
 
 Follow-on to the session below, same day.
