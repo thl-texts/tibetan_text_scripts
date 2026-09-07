@@ -161,6 +161,100 @@ New code, following the repo's existing `tibtexts/` (reusable classes) + top-lev
    the user can see whether any of the not-yet-downloaded fontsgeek fonts (`Dedris-b`, `-b1`,
    `-c`, `-d`, `-e`, `-f`, possibly `-a2`/`-a3`) are actually needed.
 
+## STATUS as of 2026-09-07 end of session (read this first if resuming)
+
+**Built and committed** (commits `a754dbd`, `dd5b13e`, `4f1ff22`):
+- `tibtexts/fodtdoc.py` (`FodtDoc`) — extraction via LibreOffice headless flat-ODT export.
+  Working and validated against all six `KAMA-084-{a..f}.doc`. Fixed one real bug during this
+  session: `FodtDoc.from_doc`'s scratch profile/output dir must use **absolute paths** — a
+  relative path produced an invalid `file://` URI and caused `soffice` to hang indefinitely
+  (600s timeout) instead of erroring, only surfaced when converting a larger file (`d.doc`).
+- `tibtexts/dedrismap.py` (`DedrisMap`, `tokenize_unicode`) — table load/save/resolve, and a
+  regex-based Unicode Tibetan tokenizer (STACK = consonant + subjoined run, VOWEL = vowel-sign
+  run, OTHER = everything else) used to build comparable tokens on the Unicode side.
+- `build_dedris_map.py` — trainer. **Superseded the plan's positional-alignment design
+  entirely** with **frequency-rank matching** (see next section) once the per-letter
+  file-correspondence assumption was found false (see the CORRECTION note above). Anchors on
+  tsek (the single most frequent keystroke in the dominant stack font), derives an expected
+  unicode/raw count ratio from it, then greedily matches every other raw token to its
+  nearest-expected-count unclaimed Unicode candidate token — leaving a poor fit (relative
+  error > 35%) unresolved rather than force-matching it.
+- `convert_dedris.py` — converter. Resolves each keystroke via `DedrisMap`, concatenates,
+  marks unresolved keystrokes inline as `<<font:char>>` plus logs them.
+
+**Why frequency-rank matching instead of positional alignment (§3 as originally written)**:
+once `FodtDoc` was working, checking actual character/tsek counts showed
+`KAMA-084-{a,b,c,d}.doc` do **not** correspond 1:1 by letter to `KAMA-084-{a,b,c,d}.docx` (see
+the CORRECTION note earlier in this doc) — so there's no reliable positional pairing to run a
+sequence-alignment DP against. But Tibetan Buddhist commentarial text has a stable enough
+letter-frequency distribution that matching by rank/expected-count works for an initial pass,
+without needing to know which specific raw file corresponds to which specific converted file.
+
+**Held-out validation result: the frequency-only table is NOT accurate enough on its own.**
+Trained on Unicode side = `{a,b,c}.docx` (raw side = all six `.doc`, held out `d`'s Unicode
+text only), then ran `convert_dedris.py` on `KAMA-084-d.doc` and compared to the real
+`KAMA-084-d.docx`. Result: **garbled, not real Tibetan**, despite individual high-confidence
+table entries looking like plausible Tibetan letter clusters in isolation (e.g. `སྐྱ`, `རྒྱ`,
+`སྦྱ` all decoded correctly for the dominant font `Dedris-a`). Manually decoding a raw sample
+by hand through the trained table suggested why: the **consonant-stack entries are largely
+right** (e.g. the sequence decoded to real words like `ཕན` "benefit"), but the **`Dedris-vowa`
+(vowel-sign) entries are the weak point** — smaller vocabulary (~29 distinct keys) but lower
+confidence scores (0.85–0.92 for the four most common, vs. 0.94–1.00 for common consonants),
+and since a vowel appears in nearly every syllable, a handful of wrong vowel entries garble a
+huge fraction of all output.
+
+**Vowel corrections confirmed with the user so far** (via manual review, not automatable from
+frequency alone — this is the "make a list and ask" collaboration the user proposed):
+- Key `'J'` (11,544 occurrences, 4th-most-frequent Dedris-vowa key): trained table had this
+  wrong as literal space (0.85 confidence); **confirmed correct value is short-i, U+0F72
+  (ི)**. Spotted by noticing exactly 4 basic Tibetan vowels (i/u/e/o) should occupy the 4
+  highest-frequency Dedris-vowa keys, and the table only had 3 of them right.
+- Key `'R'` (14,362 occurrences, 2nd-most-frequent): trained table had this wrong as plain
+  short-u, U+0F75 (ུ); **confirmed correct value is long-u — achung + zhabkyu, U+0F71 U+0F75
+  (ཱུ, e.g. ཀཱུ)**. Important pattern: some of these aren't single Unicode codepoints but
+  achung-prefixed compounds — don't assume every vowel key is a bare single vowel-sign
+  codepoint.
+- Keys `'A'` (17,729 occurrences, trained guess: plain o, U+0F7C) and `','` (13,469
+  occurrences, trained guess: plain e, U+0F7A) — **NOT YET CONFIRMED**. Given the long-u
+  pattern just found for `'R'`, check whether these are also achung-prefixed long forms
+  (U+0F71 U+0F7C / U+0F71 U+0F7A) rather than the plain short forms currently guessed, using
+  the same "ཀ + this key" question format that worked for R.
+- The remaining ~25 low-frequency `Dedris-vowa` entries (each seen ≤255 times; these are
+  visible in the training report / `resources/dedris-map.json` once regenerated) have not been
+  reviewed at all yet and are exactly the kind of list the user offered to check by hand.
+
+**Immediate next steps for a resumed session**:
+1. Get user confirmation on keys `'A'` and `','` (and ideally the rest of the `Dedris-vowa`
+   table — small enough, ~29 entries, to review in full).
+2. Manually patch `resources/dedris-map.json` (once generated for real — see below) with the
+   confirmed values, or add an explicit `overrides` step to `build_dedris_map.py` that applies
+   known-correct entries after the statistical pass (better long-term: keeps the trainer
+   re-runnable without losing manual corrections). A small hardcoded `KNOWN_ENTRIES` dict in
+   `build_dedris_map.py`, applied last (overriding statistical results), is probably the
+   simplest robust approach.
+3. Re-run `build_dedris_map.py` for real (no run has yet written to the actual
+   `resources/dedris-map.json` default path — all runs so far used `/tmp` test paths and
+   scratch copies in gitignored `workspace/in/sambhota-train`, `workspace/in/train-unicode`,
+   which can be deleted).
+4. Re-run the held-out validation (`convert_dedris.py` on `d.doc`, diff against real
+   `d.docx`) and actually check whether accuracy is now acceptable — no accuracy number has
+   been computed yet (only qualitative "garbled" vs. "looks plausible" judgment so far); the
+   plan's original idea of a `python-Levenshtein`-based character accuracy score, plus a
+   `diagnose_log.py`-style localized diff report, still hasn't been implemented.
+5. Given vowels are clearly the highest-leverage thing to get right, consider reviewing **all**
+   `Dedris-vowa` entries with the user before spending more time on the long tail of rare
+   consonant-stack fonts (`Dedris-c/d/e/f/g/a2/a3/b2` etc., each seen only a handful of times
+   in the whole corpus) — those rare fonts will very rarely get hit in practice and are already
+   correctly handled by being left unresolved/flagged rather than guessed.
+6. Only once `d` validates well should the table be retrained with Unicode side = full
+   `{a,b,c,d}.docx` (more data) and then applied to `e`/`f`.
+
+**Loose ends / cleanup**: `workspace/in/sambhota-train/` and `workspace/in/train-unicode/`
+(gitignored copies made for the held-out test) can be deleted once no longer needed;
+`/tmp/dedris-fonts-check/`, `/tmp/dedris-map-test.json`, `/tmp/dedris-validate/` are ephemeral
+and will not persist across machine restarts — regenerate via `build_dedris_map.py`/
+`convert_dedris.py` rather than looking for them.
+
 ## Open items to settle during implementation (not blocking, but worth surfacing as they arise)
 
 - Confirm whether `Dedris-a2`/`-a3`/`-f` (declared in `e`'s style catalog) are actually used in
