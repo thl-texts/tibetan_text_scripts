@@ -42,13 +42,27 @@ for human review rather than guessing silently.
   onto the same small printable-ASCII keystroke alphabet; the *font active at each keystroke*
   determines whether a key produces a base consonant, a subjoined/stacked form, a vowel sign,
   etc. Confirmed the document text is 100% within 7-bit ASCII (no high-bit/hex-escaped chars).
-- Characters are typed as **one single interleaved stream in ordinary reading order**
-  (base → subjoined → vowel → suffix), with fonts switching character-by-character — visual
-  stacking comes from each font's glyph design, not from document-level layering or manual
-  cursor positioning. This was confirmed by inspecting raw ODT markup showing font switches at
-  single-character granularity within continuous runs. Practically: this reduces the problem
-  to sequential token-substitution + syllable composition (like a Wylie/EWTS converter), not a
-  2-D layout/overlay reverse-engineering problem.
+- Characters are typed as **one single interleaved stream in ordinary reading order**,
+  with fonts switching character-by-character — visual stacking comes from each font's glyph
+  design, not from document-level layering or manual cursor positioning. This was confirmed by
+  inspecting raw ODT markup showing font switches at single-character granularity within
+  continuous runs.
+- **Corrected encoding model (per the user, who designed/knows this font family directly)**:
+  each single Dedris keystroke doesn't represent one Tibetan letter — **it represents an
+  entire pre-rendered consonant stack** (2 or more Tibetan letters glued into one glyph in the
+  font), which is why a font like Dedris-a needs so many distinct byte values: one per
+  distinct stack combination the typist might need, not one per letter. Converting one such
+  keystroke therefore expands to a *set* of 2+ Unicode codepoints (the stack's base consonant
+  plus its subjoined-form codepoint(s)), not just 1. Vowel signs are a separate keystroke
+  (Dedris-vowa) applied per syllable on top of/after the stack. **This means the
+  "composition/assembly" step (§4 below) is simpler than originally framed**: no generic
+  Tibetan base→subjoined→vowel reordering state machine is needed — each keystroke resolves
+  independently (via the flat per-font lookup table trained in §3) to its correct, *already
+  correctly-ordered* Unicode string (1, 2, or more codepoints), and assembly is just
+  concatenating those resolved strings in keystroke order, inserting tsek at syllable
+  boundaries. This also means the alignment DP in §3 step 4 must allow a Dedris token to map
+  to more than 2 Unicode codepoints (3+ for bigger stacks), not just 0/1/2 as originally
+  scoped.
 - `textutil` (already used by `doc2rtf.sh`) is **not usable for extraction** — since the real
   Dedris fonts aren't installed on macOS, Word's own `.doc` reader silently collapses runs into
   substitute fonts (`Times`/`Times New Roman`), destroying the font-switch signal this whole
@@ -109,8 +123,9 @@ New code, following the repo's existing `tibtexts/` (reusable classes) + top-lev
   3. Anchors on tsek/shad via frequency correlation to fix the highest-confidence tokens
      first, then segments both sides into tsek-delimited syllable blocks using those anchors.
   4. Aligns within each syllable pair with a small custom DP (Needleman-Wunsch-style,
-     allowing one Dedris token → 0/1/2 Unicode codepoints) — not `difflib`, which isn't built
-     for cross-alphabet alignment.
+     allowing one Dedris token → 0 to ~4 Unicode codepoints, since one keystroke can be an
+     entire pre-rendered multi-letter consonant stack, not just a single letter) — not
+     `difflib`, which isn't built for cross-alphabet alignment.
   5. Aggregates per-token votes across the corpus; a token is "confident" above a vote
      threshold (start at ≥95% agreement), otherwise flagged for manual review.
   6. Writes the table to **`resources/dedris-map.json`** (committed to the repo like other
