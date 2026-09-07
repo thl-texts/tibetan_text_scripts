@@ -223,30 +223,36 @@ frequency alone — this is the "make a list and ask" collaboration the user pro
   visible in the training report / `resources/dedris-map.json` once regenerated) have not been
   reviewed at all yet and are exactly the kind of list the user offered to check by hand.
 
+**Review tooling built this session**: `make_review_doc.py` generates a Word table document
+(one row per keystroke: current guess + codepoints + a blank "Correct Tibetan" column) for the
+user to fill in by hand — built because the terminal's multiple-choice question UI garbles
+Tibetan text (see [[feedback-tibetan-review-format]] / SESSION_LOG.md). A first review doc for
+all `Dedris-vowa` entries (from the `/tmp` test table, since nothing's been written to the real
+`resources/dedris-map.json` yet) is at `workspace/review/dedris-vowa-review.docx` (gitignored —
+regenerate with `python make_review_doc.py --map <table.json> --font Dedris-vowa -o
+workspace/review/dedris-vowa-review.docx` if it's missing). `build_dedris_map.py` now has a
+`KNOWN_ENTRIES` dict (currently holding the J and R corrections) applied after the statistical
+pass, so confirmed corrections survive a retrain — add newly-confirmed entries there as the
+user fills in more of the review doc.
+
 **Immediate next steps for a resumed session**:
-1. Get user confirmation on keys `'A'` and `','` (and ideally the rest of the `Dedris-vowa`
-   table — small enough, ~29 entries, to review in full).
-2. Manually patch `resources/dedris-map.json` (once generated for real — see below) with the
-   confirmed values, or add an explicit `overrides` step to `build_dedris_map.py` that applies
-   known-correct entries after the statistical pass (better long-term: keeps the trainer
-   re-runnable without losing manual corrections). A small hardcoded `KNOWN_ENTRIES` dict in
-   `build_dedris_map.py`, applied last (overriding statistical results), is probably the
-   simplest robust approach.
-3. Re-run `build_dedris_map.py` for real (no run has yet written to the actual
+1. Have the user fill in `workspace/review/dedris-vowa-review.docx` (or regenerate it first if
+   missing/stale), then transcribe their answers into `build_dedris_map.py`'s `KNOWN_ENTRIES`.
+2. Re-run `build_dedris_map.py` for real (no run has yet written to the actual
    `resources/dedris-map.json` default path — all runs so far used `/tmp` test paths and
    scratch copies in gitignored `workspace/in/sambhota-train`, `workspace/in/train-unicode`,
    which can be deleted).
-4. Re-run the held-out validation (`convert_dedris.py` on `d.doc`, diff against real
+3. Re-run the held-out validation (`convert_dedris.py` on `d.doc`, diff against real
    `d.docx`) and actually check whether accuracy is now acceptable — no accuracy number has
    been computed yet (only qualitative "garbled" vs. "looks plausible" judgment so far); the
    plan's original idea of a `python-Levenshtein`-based character accuracy score, plus a
    `diagnose_log.py`-style localized diff report, still hasn't been implemented.
-5. Given vowels are clearly the highest-leverage thing to get right, consider reviewing **all**
-   `Dedris-vowa` entries with the user before spending more time on the long tail of rare
+4. Given vowels are clearly the highest-leverage thing to get right, the review doc above
+   already covers all of `Dedris-vowa` — don't spend more time on the long tail of rare
    consonant-stack fonts (`Dedris-c/d/e/f/g/a2/a3/b2` etc., each seen only a handful of times
    in the whole corpus) — those rare fonts will very rarely get hit in practice and are already
    correctly handled by being left unresolved/flagged rather than guessed.
-6. Only once `d` validates well should the table be retrained with Unicode side = full
+5. Only once `d` validates well should the table be retrained with Unicode side = full
    `{a,b,c,d}.docx` (more data) and then applied to `e`/`f`.
 
 **Loose ends / cleanup**: `workspace/in/sambhota-train/` and `workspace/in/train-unicode/`

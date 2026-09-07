@@ -56,6 +56,23 @@ DEFAULT_MAP_PATH = join(HERE, 'resources', 'dedris-map.json')
 VOWA_FONT = 'Dedris-vowa'
 MATCH_TOLERANCE = 0.35  # max relative error (|actual-expected|/expected) to accept a match
 
+# Manually confirmed (font, char) -> Unicode corrections, applied after the statistical pass
+# so a retrain never loses hand-verified entries. Add to this as more get confirmed with the
+# user (see DEDRIS_CONVERSION_PLAN.md STATUS / workspace/logs for the review process).
+KNOWN_ENTRIES = {
+    (VOWA_FONT, 'J'): 'ི',            # short-i (was wrongly trained as literal space)
+    (VOWA_FONT, 'R'): 'ཱཱུ',      # long-u: achung + zhabkyu, e.g. ཀཱུ (was wrongly trained as plain short-u)
+}
+
+
+def apply_known_entries(table):
+    for (font, ch), unicode_str in KNOWN_ENTRIES.items():
+        table.setdefault(font, {})[ch] = {
+            'unicode': unicode_str, 'confidence': 1.0, 'count': table.get(font, {}).get(ch, {}).get('count', 0),
+            'source': 'manual',
+        }
+    return table
+
 
 def collect_raw_counts(doc_paths, workdir):
     """Sum (font, char) keystroke counts across every .doc in doc_paths."""
