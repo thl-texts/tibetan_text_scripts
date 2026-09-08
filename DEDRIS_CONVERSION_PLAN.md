@@ -161,7 +161,11 @@ New code, following the repo's existing `tibtexts/` (reusable classes) + top-lev
    the user can see whether any of the not-yet-downloaded fontsgeek fonts (`Dedris-b`, `-b1`,
    `-c`, `-d`, `-e`, `-f`, possibly `-a2`/`-a3`) are actually needed.
 
-## STATUS as of 2026-09-07 end of session (read this first if resuming)
+## STATUS as of 2026-09-07 end of session (superseded — see "RESOLVED" section at the end)
+
+> **This section is history, not current guidance.** The statistical approach described below
+> was abandoned the next session once the real UDP `.fuf` ground-truth tables were found. Jump
+> to "RESOLVED — 2026-09-08" at the bottom of this file if you're resuming this work.
 
 **Built and committed** (commits `a754dbd`, `dd5b13e`, `4f1ff22`):
 - `tibtexts/fodtdoc.py` (`FodtDoc`) — extraction via LibreOffice headless flat-ODT export.
@@ -279,3 +283,40 @@ and will not persist across machine restarts — regenerate via `build_dedris_ma
   and review the untranslatable-token log.
 - Confirm `add_styles2docx.py` runs cleanly on the converter's `.docx` output with no
   unexpected style/structure issues.
+
+## RESOLVED — 2026-09-08: ground-truth tables found, `e`/`f` converted successfully
+
+Everything above this section is the design history of the **statistical (frequency-rank
+matching)** approach, which was abandoned mid-session once it became clear it could not
+resolve the `Dedris-a` consonant-stack table accurately enough (see `SESSION_LOG.md`'s
+2026-09-08 entry for the full narrative). It's kept here for the record, not as current
+guidance — **for how the converter actually works and how to run it now, see the README's
+"Converting Dedris-Family Sambhota Files" section**, not the sections above.
+
+**What actually solved it**: the user installed the real `udp2302.exe` (via CrossOver on this
+Mac, sidestepping the need for a Windows machine) and copied its installed program directory
+out to `resources/fonts/UnicDocP/`. That directory contains one `.fuf` plain-text file per
+font UDP knows how to convert — its **real, authoritative keystroke→Unicode tables**, not a
+guess. `build_dedris_map_from_fuf.py` parses these directly into `resources/dedris-map.json`,
+completely replacing `build_dedris_map.py`'s statistical approach (deleted, along with
+`make_review_doc.py` which only existed to hand-review the statistical guesses).
+
+Two follow-up bugs found and fixed after the initial `.fuf` table build:
+1. `apply_known_entries()` (from the statistical-era `KNOWN_ENTRIES` mechanism) was defined
+   but never called from `main()` — a genuine bug caught mid-session, now moot since that
+   whole mechanism was removed along with `build_dedris_map.py`.
+2. A `.fuf` codepoints value of `FFFF` (seen exactly once, on the space keystroke in
+   `Dedris-a.fuf`) means "no substitution — pass the keystroke through unchanged," not "delete
+   it" — initially misread as the latter, which silently ate the conventional space that
+   follows a shad (`།`) in these documents. Fixed in `build_dedris_map_from_fuf.py` (pass
+   space through as itself) and in `convert_dedris.py` (a post-processing rule keeps a space
+   only when it immediately follows `།` or `༈`, dropping the typist's other, purely
+   decorative space keystrokes between syllables — spot-checked against the real
+   `KAMA-084-a.docx` where 96%+ of real spaces follow one of those two marks).
+
+`KAMA-084-e.doc` and `KAMA-084-f.doc` — the actual conversion targets — are now converted
+cleanly with no unresolved keystrokes and correct shad-spacing, at
+`workspace/fixes/kama-084-ef/out/KAMA-084-{e,f}.docx` (gitignored `workspace/`, so not in the
+repo; regenerate via `convert_dedris.py` per the README if needed). Milestone insertion and
+THL-style conversion for these two files are being handled separately (not by this plan/script
+chain).

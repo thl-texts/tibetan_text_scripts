@@ -198,6 +198,65 @@ of the document.
 
 The document template used is in the `resources` folder. It is `tibtext-styled-tpl.docx`.
 
+## Converting Dedris-Family Sambhota Files (Pure-Python, No Windows Needed)
+
+The "Overall Process" above needs a Windows machine to run `udp.exe`. For files in the
+**Dedris** font family (Nitartha International, 1999 — `Dedris-a`, `Dedris-vowa`, etc., used
+for the Peltsek Kama collection), there is a pure-Python alternative that runs entirely on the
+Mac: `convert_dedris.py`, using a keystroke→Unicode lookup table at `resources/dedris-map.json`.
+
+**Where the lookup table comes from.** It is *not* a guess — it's built directly from UDP's own
+real conversion tables. UDP (the same `udp.exe` tool from
+[https://leighb.com/udp/](https://leighb.com/udp/)) installs one plain-text `.fuf` file per
+font it knows how to convert (`Dedris-a.fuf`, `Dedris-vowa.fuf`, etc.), each mapping every
+keystroke to the Unicode codepoint(s) it should produce. `build_dedris_map_from_fuf.py` parses
+those `.fuf` files into `resources/dedris-map.json`. `resources/fonts/` (which holds both the
+`.fuf` source files and the Dedris `.ttf` font files themselves) is gitignored, since these are
+third-party files, not something to redistribute in this repo — `resources/dedris-map.json`
+(the JSON built from them) is what's actually checked in and used at conversion time.
+
+To regenerate `resources/dedris-map.json` from scratch on a new machine (only needed if it's
+missing, or a different/updated version of UDP becomes available):
+
+1. Get `udp2302.exe` from [https://leighb.com/udp/](https://leighb.com/udp/).
+2. Install and run it somewhere that can execute Windows binaries — on this Mac that means
+   [CrossOver](https://www.codeweavers.com/crossover) (a free 14-day trial is enough): install
+   `udp2302.exe` into a new CrossOver bottle, which unpacks the full UDP program directory
+   (fonts, `.fuf` tables, etc.) into that bottle's `Program Files` equivalent.
+3. Copy that installed folder out of the bottle onto the Mac filesystem, e.g. to
+   `resources/fonts/UnicDocP/`.
+4. Run:
+   ```
+   python build_dedris_map_from_fuf.py --fuf-dir resources/fonts/UnicDocP -o resources/dedris-map.json
+   ```
+
+**Converting files.** Once `resources/dedris-map.json` exists, convert Dedris-encoded `.doc`
+files with:
+```
+python convert_dedris.py -w <workspace> KAMA-084-e.doc KAMA-084-f.doc
+```
+- `-w/--workspace` sets the workspace root (default: `./workspace`); input `.doc` files are
+  read from wherever you point the positional arguments (a path or glob), independent of that
+  workspace.
+- `-o/--outdir` sets where the converted `.docx` files go (default: `<workspace>/out`).
+- `--map` overrides which lookup table to use (default: `resources/dedris-map.json`).
+- Output feeds directly into `add_styles2docx.py` / `insert_milestones.py`, same as the
+  Windows/`udp.exe` pipeline's `.docx` output.
+
+Requires LibreOffice installed locally (`/Applications/LibreOffice.app`) — conversion shells
+out to `soffice --headless` to extract per-character font info from the legacy `.doc`, since
+`textutil`/Word silently substitute a generic font for anything not installed, which destroys
+the font-switch signal the whole approach depends on (see `tibtexts/fodtdoc.py`).
+
+Any keystroke with no entry in the table (rare — only encountered for very obscure Dedris
+sub-fonts) is left as an inline `<<font:char>>` marker and logged under `workspace/logs/`,
+rather than guessed, so a human proofreader has an exact, greppable list of spots to check
+before the file is considered final.
+
+See `DEDRIS_CONVERSION_PLAN.md` for the fuller design history, including an earlier
+statistical (frequency-matching) approach that was tried and abandoned before the `.fuf`
+ground-truth tables were found.
+
 ## Adding THL Styles to Texts
 The script add_styles2docx.py will take all the .docx files in the /in folder and add the THL styles to them, producing 
 new documents in the out folder. When this script is run, it gives you three options. You can choose 1. whether or not 

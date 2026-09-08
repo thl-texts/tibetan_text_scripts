@@ -5,6 +5,85 @@ between machines. Newest entries first. Add a new entry when a session makes a
 substantive fix, decision, or leaves something in-progress worth knowing about;
 skip trivial sessions.
 
+## 2026-09-08 — Dedris converter: abandoned statistical guessing, found real UDP tables, `e`/`f` done
+
+Continuation of 2026-09-07's session. Short version: the statistical (frequency-rank matching)
+approach described in the next log entry down was a dead end, and got replaced entirely by
+using UDP's own real conversion tables — `KAMA-084-e.doc`/`f.doc` (the actual targets) are now
+converted cleanly. See `DEDRIS_CONVERSION_PLAN.md`'s "RESOLVED — 2026-09-08" section for the
+technical detail; this entry is the narrative.
+
+**The vowel-table hand-review (from the prior session) turned out not to be the real
+bottleneck.** The user filled in `workspace/fixes/kama-084-ef/review/dedris-vowa-review.docx`
+by eye (comparing each keystroke rendered in the actual installed `Dedris-vowa` font glyph
+against the trained guess — noted several raw keys collapse to the same Unicode vowel because
+Dedris drew visually distinct glyph variants for the same vowel depending on the root
+consonant). Transcribing those corrections into `build_dedris_map.py`'s `KNOWN_ENTRIES` and
+retraining still produced garbled, non-real Tibetan on held-out validation — because the much
+bigger `Dedris-a` consonant-stack table (80.8% of every keystroke in the corpus; `Dedris-vowa`
+is only 15.6%) was still just a frequency-rank guess, and that guess wasn't good enough at
+that scale even though individual high-confidence entries looked plausible in isolation.
+(Also found and fixed a real bug in passing: `build_dedris_map.py`'s `apply_known_entries()`
+was defined but never called from `main()`, so the hand-confirmed vowel corrections weren't
+actually reaching the output table at all — now moot, see below.)
+
+**Tried OCR-based glyph recognition next** (installed `tesseract` + `tesseract-lang` via
+Homebrew, rendered individual Dedris keystrokes as images with the real installed fonts, ran
+Tibetan-model OCR on them). Mixed results — got structural pieces right (e.g. correctly read a
+subjoined consonant) but confused visually-similar base consonants, and was size-sensitive
+(different image sizes gave different answers for the same glyph), since Tesseract's Tibetan
+model expects normal text lines, not isolated jumbo single glyphs. Concluded it wasn't worth
+pursuing further without much more engineering (e.g. closed-set image-similarity matching
+against rendered Unicode candidates, rather than open-vocabulary OCR).
+
+**What actually worked**: the user asked about running the real `udp.exe` (the tool this whole
+converter was meant to replace) on the Mac directly. Homebrew's Wine casks (`wine-stable`,
+`wine@staging`, `wine@devel`) are all currently disabled (blocked 2026-09-01, fail Gatekeeper).
+[CrossOver](https://www.codeweavers.com/crossover)'s free trial worked instead — the user
+installed `udp2302.exe` into a CrossOver bottle, then copied the installed program directory
+out to `resources/fonts/UnicDocP/`. That directory turned out to contain one `.fuf` plain-text
+file per font UDP converts (`Dedris-a.fuf`, `Dedris-vowa.fuf`, etc.) — **UDP's own real
+keystroke→Unicode tables**, not something to reverse-engineer or guess. Spot-checked against
+every entry the user had hand-confirmed the hard way and they matched exactly.
+
+Wrote `build_dedris_map_from_fuf.py` to parse these directly into `resources/dedris-map.json`,
+completely obsoleting the statistical approach. Deleted `build_dedris_map.py` and
+`make_review_doc.py` (only existed to train/review the statistical guess) and stripped the
+now-unused Unicode tokenizer out of `tibtexts/dedrismap.py`. Converting `KAMA-084-d.doc`
+(held out) with the new table produced genuine, grammatical Tibetan for the first time all
+session — it didn't textually match the real `d.docx` verbatim, but that's expected and
+explains an earlier mystery: the raw `.doc` files and their converted `.docx` counterparts
+were already known not to correspond 1:1 (the `.docx` set was evidently re-chunked by title
+boundaries), so `d.doc`/`d.docx` are almost certainly just different texts within the volume,
+not a mismatch.
+
+Two more real bugs found and fixed while converting the actual `e`/`f` targets: (1) a `.fuf`
+codepoints value of `FFFF` (seen once, on `Dedris-a`'s space keystroke) means "pass this
+keystroke through unchanged," not "delete it" — misread as the latter at first, which silently
+dropped the space that conventionally follows a shad (`།`) in these documents; (2) even after
+fixing that, *every* space was being kept (including the typist's purely decorative spaces
+between syllables), because the raw docs use the same space keystroke for both purposes.
+Fixed with a post-processing rule in `convert_dedris.py`: keep a space only when it
+immediately follows `།` or `༈`, drop it otherwise — spot-checked against the real
+`KAMA-084-a.docx`, where 96%+ of actual spaces there follow one of those two marks.
+
+**End state**: `KAMA-084-e.doc`/`f.doc` converted cleanly, no unresolved keystrokes, correct
+shad-spacing, at `workspace/fixes/kama-084-ef/out/KAMA-084-{e,f}.docx` (gitignored, not in the
+repo). `resources/fonts/` and `resources/old/` added to `.gitignore` and untracked from git
+(third-party/legacy files, not meant to be redistributed in this repo) — `resources/fonts/`
+specifically now holds `udp2302.exe` and the unpacked `UnicDocP/` directory needed to
+regenerate `resources/dedris-map.json` from scratch on a new machine (see README for the
+regeneration steps, since these files aren't in the repo). The user is handling milestone
+insertion and THL-style conversion for `e`/`f` separately. New README section: "Converting
+Dedris-Family Sambhota Files (Pure-Python, No Windows Needed)".
+
+**Takeaway for next session**: when a from-scratch reverse-engineering effort (statistical
+guessing, then OCR) is fighting hard for marginal accuracy gains, it's worth checking whether
+the *original* proprietary tool can just be run directly (even via a compatibility layer like
+CrossOver) before investing further in the from-scratch approach — the real tables were sitting
+in a plain-text, trivially-parseable format the whole time, just inside a Windows install we
+hadn't run yet.
+
 ## 2026-09-07 — Dedris (Sambhota) → Unicode converter: built, validated, needs vowel fixes
 
 Built a pure-Python replacement for the Windows/`udp.exe` leg of the Sambhota

@@ -1,8 +1,9 @@
 """
-Converts Dedris-family (Sambhota) .doc files to Unicode Tibetan .docx, using the trained
-lookup table from build_dedris_map.py (resources/dedris-map.json by default).
+Converts Dedris-family (Sambhota) .doc files to Unicode Tibetan .docx, using the ground-truth
+lookup table built by build_dedris_map_from_fuf.py from UDP's own .fuf keystroke tables
+(resources/dedris-map.json by default).
 
-Since a single Dedris keystroke represents an entire pre-rendered consonant stack (see
+Since a single Dedris keystroke can resolve to one or more Unicode codepoints (see
 DEDRIS_CONVERSION_PLAN.md / tibtexts/dedrismap.py), conversion is: resolve every (font, char)
 keystroke independently via DedrisMap, concatenate the results in order, then run the same
 punctuation cleanup insert_milestones.py's UniVol already uses on OCR/Sambhota-derived text.
@@ -18,6 +19,7 @@ Usage:
 """
 import argparse
 import datetime
+import re
 from glob import glob
 from os import makedirs
 from os.path import join, dirname, abspath, basename, splitext, exists
@@ -34,6 +36,15 @@ DEFAULT_MAP_PATH = join(HERE, 'resources', 'dedris-map.json')
 
 MIN_CONFIDENCE = 0.5  # below this, treat as unresolved rather than trust the guess
 
+# A raw space keystroke resolves to a literal space (see build_dedris_map_from_fuf.py), but the
+# typist used the same keystroke for two different purposes: the conventional space after a
+# sentence-final mark (kept), and pure visual padding between every other syllable (dropped).
+# Spot-checked against the already-converted KAMA-084-a.docx: 96% of real spaces there follow a
+# shad (།), most of the remainder follow the similar sbrul-shad mark (༈) -- so keep a space only
+# when it immediately follows one of those, and drop it (it's just padding) everywhere else.
+SPACE_KEEP_AFTER = '།༈'
+_DROP_SPACE_RE = re.compile('(?<![{}]) '.format(SPACE_KEEP_AFTER))
+
 
 def convert_paragraph(paragraph, dmap, unresolved_log, para_index):
     out = []
@@ -47,6 +58,8 @@ def convert_paragraph(paragraph, dmap, unresolved_log, para_index):
     text = ''.join(out)
     for pair in UniVol.normalize_pairs:
         text = text.replace(*pair)
+    text = re.sub(r' {2,}', ' ', text)
+    text = _DROP_SPACE_RE.sub('', text)
     return text
 
 
