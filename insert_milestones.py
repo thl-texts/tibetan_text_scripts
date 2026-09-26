@@ -92,13 +92,16 @@ def set_unidocs(pth):
     global unidocs
     isok = False
     bakfld = join(pth, 'bak')
+    tmpfld = join(pth, 'temp')
     for f in listdir(pth):
         if not f.startswith('.'):
             if f.endswith('.docx'):
                 if not exists(bakfld):
                     mkdir(bakfld)
+                if not exists(tmpfld):
+                    mkdir(tmpfld)
                 filepth = join(pth, f)
-                tmppth = join(pth, 'temp', f)
+                tmppth = join(tmpfld, f)
                 shutil.copy(filepth, tmppth)
                 cmd = 'textutil -convert txt -output "{}" "{}"'.format(filepth.replace('.docx', '.txt'), filepth)
                 system(cmd)
