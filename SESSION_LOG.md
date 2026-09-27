@@ -5,6 +5,20 @@ between machines. Newest entries first. Add a new entry when a session makes a
 substantive fix, decision, or leaves something in-progress worth knowing about;
 skip trivial sessions.
 
+## 2026-09-27 — kama-vol-084 done and posted; Dedris converter merged to master
+
+`kama-vol-084` is finished: all five texts (`a`–`e`) run through `process_volume.py`
+(`insert_milestones.py` + `add_styles2docx.py`) and posted to Teams, in the folder where
+paged/styled files are stored. `KAMA-084-e.docx` had gone missing from the source input at
+some point and was recreated from the OCR before this run. The run's
+`kama-vol-084-missed-ms.log` shows 12 milestones not auto-inserted (`74.4`, `160.5`, `167.2`,
+`293.5`, `293.6`, `334/334.1`, `406.2`, `406.5`, `406.6`, `407/407.1`, `428.2`, `429.3`) —
+under the usual threshold, output was accepted without a `diagnose_log.py` deep-dive.
+
+Also: the Dedris (Sambhota→Unicode) converter and its other accumulated updates (see
+2026-09-08 entry below) are now merged to `master` via PR #8 (`4adf2ab`); the
+`dedris-converter` branch is deleted, both locally and on `origin`.
+
 ## 2026-09-08 — Dedris converter: abandoned statistical guessing, found real UDP tables, `e`/`f` done
 
 Continuation of 2026-09-07's session. Short version: the statistical (frequency-rank matching)
