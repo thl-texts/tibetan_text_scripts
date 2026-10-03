@@ -262,3 +262,34 @@ template/styling issues, not the milestone-insertion logic itself. Also
 remember that already-generated `.docx` files embed their own copy of the
 template's styles at creation time, so fixing the template doesn't retroactively
 fix docs already produced — they need regenerating.
+
+## 2026-10-03 — Diagnosis: why vol 091 missed 100+ milestones (fix NOT yet implemented)
+
+Log: `workspace/logs/kama-vol-091-2026-10-03_11-38.log` (110 "not found" warnings, no single
+failure region per `diagnose_log.py`). User spot-checked e.g. `[266][266.1]` ("བདག་ཉིད་ལ་བཟང་བར",
+Curr Doc KAMA-091-c): the text *is* in the doc, so these are search misses, not OCR/doc mismatches.
+
+**Findings**
+- For `[266.1]` the target sits ~300 chars *past the end* of the search chunk (chunk ends at
+  `…ཉིད་དང`; target is ~4 refrain sentences later). Index had lagged behind after earlier misses
+  (265.2, 265.3, 265.5) in a highly repetitive refrain passage.
+- The Unicode text has combining marks U+0F37 (༷) and U+0F35 (༵) after nearly every syllable
+  (~25% of chars in this passage, ~9% of KAMA-091-c). Two effects:
+  1. They eat the fuzzy-match budget (`ldist=5`): `སེམས་གྱི་དེ་ཁོ་ན` vs `སེམས༷་ཀྱི༷་དེ༷་ཁོ༷་ན` costs
+     4 mark insertions + 1 letter diff = 5, so matches barely succeed or fail.
+  2. They make Unicode longer than OCR lines, but the chunk is sized `avg_ln_len(152) * factor`
+     in raw chars, so it covers fewer real chars than intended -> window falls behind.
+
+**Proposed fix (to implement next session)**
+- In `tibtexts/univol.py` / `insert_milestones.find_insertion_point`: search a copy of the chunk
+  with U+0F35/U+0F37 stripped, keeping an index map (stripped idx -> raw idx) so the milestone
+  is still inserted at the correct raw position (`insert_milestone` already nudges to syllable
+  boundaries). Size the window (`get_search_chunk`) in stripped characters, and consider
+  advancing `self.index` on a miss. Then re-run vol 091 and compare missed count.
+- Optional: tighten `ldist` once marks no longer consume it, to cut false matches in refrains.
+
+**Unfinished**: a verification script (fuzzy-search every missed line in the stripped source doc
+to classify misses as ahead-of-window / behind / no-hit) was still running when the session ended;
+its results were never read. Scratch copy was in the session scratchpad (not saved).
+Note: working tree has an uncommitted `insert_milestones.py` change (`ocrfolder` ->
+`./tibetan_text_scripts/resources/ocr`).
