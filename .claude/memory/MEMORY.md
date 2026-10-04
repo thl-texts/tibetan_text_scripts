@@ -4,5 +4,5 @@
 - [Tibetan review format](feedback_tibetan_review_format.md) — use a fill-in table doc, not chat questions, when asking the user to correct Tibetan Unicode text.
 - [Prefer running original tool](feedback_prefer_running_original_tool.md) — before reverse-engineering a legacy format further, check if the real proprietary tool can just be run via Wine/CrossOver.
 - [Git workflow env](git_workflow_env.md) — gh CLI is authed; auto mode blocks Claude from committing .claude/ config, so the user commits it.
-- [Vol 091 missed-milestone fix](project_vol091_missed_milestones_fix.md) — IMPLEMENTED 2026-10-04 on branch fix-vol091-combining-marks (110→32 misses); no PR yet; [155.1-155.4] still missed
+- [Vol 091 missed-milestone fix](project_vol091_missed_milestones_fix.md) — IMPLEMENTED 2026-10-04 merged to master 2026-10-04 (PR #9, 110→32 misses); [155.1-155.4] still missed
 - [Memory location](feedback_memory_location.md) — keep memories in repo .claude/memory/, not ~/.claude

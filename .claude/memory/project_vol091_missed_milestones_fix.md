@@ -15,4 +15,4 @@ Vol 091 (2026-10-03 run, log `kama-vol-091-2026-10-03_11-38.log`) missed 110 mil
 
 **Status (2026-10-03):** branch `fix-vol091-combining-marks` is pushed (SESSION_LOG entry, ocrfolder change, .DS_Store untracked) but contains NO code fix yet. At the start of the next session, remind the user this fix is pending and offer to implement it on that branch.
 
-**Update 2026-10-04:** fix implemented and pushed on `fix-vol091-combining-marks` (commit after 764e7b1); vol 091 re-run (`-v 91 -s 3 -c -d`) gives 32 misses. Remaining: region at [155.1]-[155.4] (KAMA-091-b) + scattered. Branch not yet merged to master / no PR. Ignore the 'pending' reminder above.
+**Update 2026-10-04:** fix implemented and pushed on `fix-vol091-combining-marks` (commit after 764e7b1); vol 091 re-run (`-v 91 -s 3 -c -d`) gives 32 misses. Remaining: region at [155.1]-[155.4] (KAMA-091-b) + scattered. Merged to master 2026-10-04 via PR #9. Ignore the 'pending' reminder above.
