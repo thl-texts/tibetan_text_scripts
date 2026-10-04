@@ -293,3 +293,13 @@ to classify misses as ahead-of-window / behind / no-hit) was still running when 
 its results were never read. Scratch copy was in the session scratchpad (not saved).
 Note: working tree has an uncommitted `insert_milestones.py` change (`ocrfolder` ->
 `./tibetan_text_scripts/resources/ocr`).
+
+## 2026-10-04 — Fix: search ignores combining marks U+0F35/U+0F37 (vol 091: 110 -> 32 misses)
+
+Implemented the 2026-10-03 proposal. `UniVol.get_search_chunk` now builds the chunk from the raw
+text with U+0F35/U+0F37 stripped, sizing the window in stripped chars (`avglnlen * factor`), and
+keeps `chunk_map` (stripped idx -> raw offset). `find_insertion_point` converts the match start
+via `UniVol.raw_offset`, so milestones still land at the right raw position. Re-ran vol 091
+(`-v 91 -s 3 -c -d`): 32 misses (was 110). Remaining: a 4-milestone region at [155.1]-[155.4]
+(KAMA-091-b, scan 157.1) per `diagnose_log.py`, plus scattered misses. Not done: advancing
+`index` on a miss, tightening `ldist`.

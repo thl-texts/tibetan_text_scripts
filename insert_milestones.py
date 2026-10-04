@@ -165,7 +165,7 @@ def find_insertion_point(doc, linebeg, lines_skipped):
                 elif m.dist < mtc[best_match].dist:
                     best_match = n
 
-            insind = mtc[best_match].start
+            insind = doc.raw_offset(mtc[best_match].start)
             break
     return insind
 
