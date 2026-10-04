@@ -22,7 +22,7 @@ unidocs = []
 avg_ln_len = 0
 pgs_to_skip = list()
 workspace = './tibetan_text_scripts/workspace'
-ocrfolder = './tibetan_text_scripts/workspace/ocr' #'./tibetan_text_scripts/resources/ocr'
+ocrfolder = './tibetan_text_scripts/resources/ocr'
 
 
 def delete_files_in(dirpath, recurse=False):
@@ -165,7 +165,7 @@ def find_insertion_point(doc, linebeg, lines_skipped):
                 elif m.dist < mtc[best_match].dist:
                     best_match = n
 
-            insind = mtc[best_match].start
+            insind = doc.raw_offset(mtc[best_match].start)
             break
     return insind
 

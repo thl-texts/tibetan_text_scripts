@@ -7,6 +7,10 @@ import logging
 class UniVol:
     line_length_add = 30
 
+    # Combining marks that follow many syllables in the Unicode docs. They eat the fuzzy-match
+    # budget and inflate raw length, so searches run on a copy with them stripped.
+    search_ignore = '\u0f35\u0f37'
+
     normalize_pairs = (
         ('༌', '་'),  # nb tsek to regular tsek
         ('༴', '།'),
@@ -24,6 +28,7 @@ class UniVol:
         self.dir = '/'.join(pthpts)
         self.avglnlen = avglnlen
         self.index = 0
+        self.chunk_map = []  # stripped-chunk index -> offset from self.index in the raw text
         with open(self.path, 'r') as fin:
             for ln in fin:
                 ln = ln.strip()
@@ -52,10 +57,25 @@ class UniVol:
             # self.index += int(self.avglnlen * skipped * 0.8) # old augment
             factor = skipped * 1.5
         chunk_start = self.index
-        chunk_end = chunk_start + int(self.avglnlen * factor)
-        chunk = self.text[chunk_start:chunk_end]
-        chunk = self.clean_chunk(chunk)
-        return chunk
+        # Size the window in searchable chars (combining marks don't count), keeping a map back
+        # to raw offsets so the match can be inserted at the right place in the raw text.
+        max_chars = int(self.avglnlen * factor)
+        chars = []
+        self.chunk_map = []
+        for off, ch in enumerate(self.text[chunk_start:chunk_start + max_chars * 2]):
+            if ch in self.search_ignore:
+                continue
+            if len(chars) >= max_chars:
+                break
+            chars.append(ch)
+            self.chunk_map.append(off)
+        return self.clean_chunk(''.join(chars))
+
+    def raw_offset(self, chunk_ind):
+        """Convert an index in the last chunk from get_search_chunk to an offset from self.index"""
+        if chunk_ind < len(self.chunk_map):
+            return self.chunk_map[chunk_ind]
+        return chunk_ind
 
     def clean_chunk(self, chnk):
         for pair in self.normalize_pairs:
