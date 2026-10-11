@@ -255,6 +255,15 @@ def do_insertions(inpath, outpath, volflnm, startsat, blankpgs, breaks):
     # Load the Unicode document into which the milestones will be inserted into the custom UniVol class
     set_unidocs(inpath)
     unidoc = get_next_unidoc()
+    if unidoc is None:
+        msout.close()
+        remove(msflnm)  # Don't leave an empty missed-ms log behind for callers to misread
+        msg = ("No Unicode .docx or .txt files found in the in directory: {}\n"
+               "Put the converted Unicode chunk files for this volume there (not in the "
+               "workspace folder itself) and run again.".format(inpath))
+        logging.error(msg)
+        print("\n" + msg)
+        exit(1)
     logging.info("Doing file: {}".format(unidoc.filename))
 
     # Iterate through the lines in the OCR Volume with the custom iterater that returns just the beginning of the line

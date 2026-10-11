@@ -85,7 +85,8 @@ the per-run logs in `workspace/logs/`.
   miss lines are always written. Never modifies the log.
 - `insert_milestones.py` — fuzzy-matches OCR line beginnings against converted Unicode
   chunk files to insert `[page.line]` milestones. Core logic; uses the two classes below.
-  Its `-c/--clear` flag resets the workspace for a *re-run* (recoverable): clears `out/`
+  If `in/` holds no `.docx`/`.txt` files it logs a clear message and exits 1 (no traceback); the usual
+  cause is chunk files left in `workspace/` instead of `workspace/in/`. Its `-c/--clear` flag resets the workspace for a *re-run* (recoverable): clears `out/`
   and `in/temp`, clears the top level of `in/`, then restores the originals from `in/bak`
   so the conversion can run again. (To wipe everything instead, use `clear_all.py`.)
 - `clear_all.py` — standalone, destructive workspace reset for starting a fresh volume:

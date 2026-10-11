@@ -303,3 +303,12 @@ via `UniVol.raw_offset`, so milestones still land at the right raw position. Re-
 (`-v 91 -s 3 -c -d`): 32 misses (was 110). Remaining: a 4-milestone region at [155.1]-[155.4]
 (KAMA-091-b, scan 157.1) per `diagnose_log.py`, plus scattered misses. Not done: advancing
 `index` on a miss, tightening `ldist`.
+
+## 2026-10-11 — Graceful exit when `in/` has no chunk files (vol 122)
+
+`process_volume.py -v 122 --threshold 50 -a -m -- -s 7` crashed with `AttributeError: 'NoneType'
+object has no attribute 'filename'` in `insert_milestones.do_insertions`. Cause: the
+`KAMA-122-*.docx` files were in `workspace/` rather than `workspace/in/`, so `get_next_unidoc()`
+returned `None`. Now `do_insertions` detects that, prints/logs a clear message, deletes the empty
+`-missed-ms.log`, and exits 1 (which `process_volume.py` treats as a failed insert step). Compiles;
+not re-run against vol 122.
