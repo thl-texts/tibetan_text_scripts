@@ -24,6 +24,15 @@ Note (from the user): folders excluded from the repo (`workspace/`, `resources/o
 in different locations on different computers, so paths in memory/logs are not portable; verify
 locally. Recorded in `CLAUDE.md` ("Cross-machine context") and the pipeline-state memory.
 
+Branch cleanup: the repo is now down to `master` only, locally and on `origin`. The merged branches
+`claude-update` (PR #6), `ocr-tools-update` (PR #7) and `fix-no-input-files-graceful-exit` (PR #10)
+are deleted (the first two had already been removed on GitHub; a stale local remote-tracking list
+made them look present until `git fetch --prune`). `dependabot/pip/lxml-6.1.0` (PR #5, "Bump lxml
+4.9.2 -> 6.1.0") was *closed*, not merged, on 2026-04-21, and is also gone. The bump is moot:
+`requirements.txt` is `lxml>=4.9.2`, the lock file pins 6.1.1, and the pipeline has run on lxml 6.x
+since June. Our only direct lxml use is `etree.parse` in `tibtexts/fodtdoc.py` (used by
+`convert_dedris.py`, not re-run on 6.x, but the API is stable).
+
 Still open: only the unscheduled code-quality backlog (`project_improvement_backlog.md`).
 
 ## 2026-09-27 — kama-vol-084 done and posted; Dedris converter merged to master
