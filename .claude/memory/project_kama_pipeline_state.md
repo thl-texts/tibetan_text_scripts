@@ -1,45 +1,38 @@
 ---
 name: project-kama-pipeline-state
-description: "Current working state of the Tibetan Text Scripts repo — active volume-processing pipeline, developer identity, recent template/font bug fixes."
-metadata: 
-  node_type: memory
+description: "Where the Kama pipeline stands (as of 2026-10-25): tooling merged to master, vols 066/067/084/091/122 done; nothing open"
+metadata:
   type: project
-  originSessionId: c8459d9a-31eb-4f32-8138-25b8a76019b4
-  modified: 2026-09-27T13:12:32.796Z
 ---
 
-The user (Than Grove) is the original developer of this repo (created 2019-07-31), building
-a toolkit for converting and milestoning Peltsek Kama volumes for THL (Tibetan & Himalayan
-Library). The active workflow per volume is: insert OCR-based milestones
-(`insert_milestones.py`) → apply THL docx styles (`add_styles2docx.py`), or both via
-`process_volume.py`.
+Than Grove ([[user-than-grove]]) is building a toolkit for converting and milestoning Peltsek Kama
+volumes for THL. Per volume: insert OCR-based milestones (`insert_milestones.py`) → apply THL
+docx styles (`add_styles2docx.py`), or both via `process_volume.py`
+([[project-process-volume-orchestrator]]). Finished styled files are posted to **Teams**.
 
-`insert_milestones.py`'s `ocrfolder` is set to a relative path,
-`./tibetan_text_scripts/workspace/ocr` (matching the `workspace = './tibetan_text_scripts/workspace'`
-convention right above it), settled and committed as of `ff07857` (2026-08-17). It went
-through an absolute-path version first (`237f27c`) before the user confirmed the relative
-form is what they want.
+**State as of 2026-10-25 — `master` clean and in sync with `origin/master`; no open branches/PRs:**
+- Tooling merged: orchestrator, `diagnose_log.py`, OCR page tools, `clear_all.py`, Dedris converter
+  ([[project-dedris-conversion]], PR #8), vol-091 combining-marks fix (PR #9), graceful exit when
+  `in/` has no chunk files (PR #10).
+- Volumes done and posted to Teams: 066, 067 (after OCR fix, 5 missed), 084 (a–e, 12 missed),
+  **091 and 122 (re-run correctly, confirmed 2026-10-25)**.
+- Open items: none for specific volumes. Only the unscheduled [[project-improvement-backlog]].
 
-On 2026-08-17 a session diagnosed and fixed two docx-output bugs for kama-vol-068: page
-milestones invisible due to a hidden-text flag on the template's "Page Number Print Edition"
-style, and Tibetan text rendering as Jomolhari-ID instead of Jomolhari because
-`set_tib_font()` only set the ascii/hAnsi font slots, never the complex-script (`cs`) slot
-Word actually uses for Tibetan. Both fixed and pushed (`84a5531`). Full writeup lives in
-[[session-log-convention]] under `SESSION_LOG.md`.
+**Config facts:** `insert_milestones.py` `ocrfolder = './tibetan_text_scripts/resources/ocr'`
+(commit 2951d4a). Scripts expect to run from the repo's *parent* dir.
 
-`kama-vol-084` (texts a–e) finished and posted to Teams as of 2026-09-27 — that's where the
-user stores paged/styled output files. `KAMA-084-e.docx` had gone missing from the source
-input at some point and was recreated from OCR before that run; the run logged 12
-unmatched milestones (under threshold, accepted without a `diagnose_log.py` deep-dive). Also
-as of 2026-09-27, [[project-dedris-conversion]]'s converter and other accumulated updates are
-merged to `master` (PR #8, `4adf2ab`); `dedris-converter` branch deleted both locally and on
-`origin`. Full detail in `SESSION_LOG.md`'s 2026-09-27 entry.
+**Gitignored folders are NOT portable.** `workspace/`, `resources/ocr/`, `resources/worddocs/`,
+`test/` and the Teams output folder are excluded from the repo, so where they live (and whether
+they exist or hold the same volumes) differs from computer to computer (Than's instruction,
+2026-10-25). Never assume a path or file from an earlier session or another machine exists here:
+check the actual directory first, and if the OCR/workspace data is elsewhere, adjust `ocrfolder`
+locally (or pass paths) rather than committing a machine-specific path.
 
-**Why:** These aren't structural changes — they're incremental fixes/tuning as the user
-runs the pipeline for the first time on this machine.
+**Lessons:** when a styled docx looks wrong, check the template/styling layer before the matching
+logic (the 2026-08-17 bugs were a hidden-text flag on "Page Number Print Edition" and a missing
+complex-script `cs` font slot for Jomolhari — fixed in `84a5531`). Docx files embed their own copy
+of the template styles, so fixing the template doesn't fix already-generated docs; regenerate.
+Huge miss count → OCR drift ([[project-ocr-page-fix-workflow]]); scattered misses → matcher
+([[project-vol091-missed-milestones-fix]]).
 
-**How to apply:** Don't assume `insert_milestones.py`/template state is final; check current
-git diff and `SESSION_LOG.md` for the latest before making further changes. When a styled
-docx output looks wrong, check the template/styling layer before assuming the
-milestone-insertion logic is broken — both bugs found this session were template/styling
-issues.
+Full narrative history is in `SESSION_LOG.md` ([[session-log-convention]]).

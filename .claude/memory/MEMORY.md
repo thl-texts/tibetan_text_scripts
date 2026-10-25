@@ -1,8 +1,14 @@
-- [Kama pipeline state](project_kama_pipeline_state.md) — Than Grove is repo author; ocrfolder path still being tuned; 2026-08-17 template/font bug fixes.
+- [Kama pipeline state](project_kama_pipeline_state.md) — START HERE: as of 2026-10-25 master clean, vols 066/067/084/091/122 done & on Teams, nothing open.
+- [User: Than Grove](user_than_grove.md) — repo author, hands-on, reviews closely, works across several computers.
 - [SESSION_LOG.md convention](session_log_convention.md) — repo has a committed cross-machine session log; add an entry after substantive sessions.
-- [Dedris conversion project](project_dedris_conversion.md) — RESOLVED 2026-09-08, merged to master 2026-09-27 (PR #8): pure-Python Sambhota->Unicode converter using real UDP .fuf tables.
-- [Tibetan review format](feedback_tibetan_review_format.md) — use a fill-in table doc, not chat questions, when asking the user to correct Tibetan Unicode text.
-- [Prefer running original tool](feedback_prefer_running_original_tool.md) — before reverse-engineering a legacy format further, check if the real proprietary tool can just be run via Wine/CrossOver.
-- [Git workflow env](git_workflow_env.md) — gh CLI is authed; auto mode blocks Claude from committing .claude/ config, so the user commits it.
-- [Vol 091 missed-milestone fix](project_vol091_missed_milestones_fix.md) — IMPLEMENTED 2026-10-04 merged to master 2026-10-04 (PR #9, 110→32 misses); [155.1-155.4] still missed
-- [Memory location](feedback_memory_location.md) — keep memories in repo .claude/memory/, not ~/.claude
+- [Memory location](feedback_memory_location.md) — keep memories in repo .claude/memory/, not ~/.claude (old local copy ported 2026-10-25).
+- [Git workflow env](git_workflow_env.md) — gh authed; push is machine-dependent; auto mode blocks Claude committing .claude/, so the user does.
+- [process_volume.py orchestrator](project_process_volume_orchestrator.md) — chains insert_milestones → add_styles with missed-milestone gate; design decisions.
+- [diagnose_log.py](project_diagnose_log.md) — finds where a milestone run started consistently missing; auto-runs over threshold.
+- [OCR page-fix workflow](project_ocr_page_fix_workflow.md) — renumber/adjust OCR headers + rerun via -c; root cause of milestone drift.
+- [Vol 091 missed-milestone fix](project_vol091_missed_milestones_fix.md) — CLOSED 2026-10-25; combining-mark fix (PR #9), scattered-miss lesson.
+- [Dedris conversion project](project_dedris_conversion.md) — RESOLVED 2026-09-08, merged 2026-09-27 (PR #8): pure-Python Sambhota→Unicode via real UDP .fuf tables.
+- [Dependency situation](project_dependency_situation.md) — old pins fail on Python 3.14; loosened reqs + lock file; validated on real volumes.
+- [Improvement backlog](project_improvement_backlog.md) — unscheduled code-quality suggestions; confirm before doing.
+- [Tibetan review format](feedback_tibetan_review_format.md) — use a fill-in table doc, not chat questions, when asking the user to correct Tibetan Unicode.
+- [Prefer running original tool](feedback_prefer_running_original_tool.md) — before reverse-engineering a legacy format, check if the real tool can run via Wine/CrossOver.

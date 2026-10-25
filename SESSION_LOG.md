@@ -5,6 +5,27 @@ between machines. Newest entries first. Add a new entry when a session makes a
 substantive fix, decision, or leaves something in-progress worth knowing about;
 skip trivial sessions.
 
+## 2026-10-25 — Status check; vol 091 & 122 closed; memory consolidated into the repo
+
+Status review only, no code changes. Confirmed by the user: **vol 091 and vol 122 have both been
+re-run correctly and their files are posted to Teams**, so the two open items from the 10-03/10-04
+and 10-11 entries below (vol 091's 32 residual misses incl. the [155.1]–[155.4] region; vol 122's
+no-input-files fix never re-run) are **closed**. `master` is clean and in sync with `origin/master`
+(last merge: PR #10); no open branches.
+
+Memory housekeeping: the repo's `.claude/memory/` is now the single source of truth. Eight
+memories that had only existed in the old machine-local `~/.claude/projects/.../memory/` folder
+(user profile, orchestrator, diagnose_log, OCR page-fix workflow, dependency situation,
+improvement backlog, plus the 2026-06/07 work-state history) were ported in, updated where stale
+(e.g. `ocrfolder` is now `./tibetan_text_scripts/resources/ocr`, not the absolute `ocr-plain`
+path), and indexed in `MEMORY.md`. On a new machine, start with `project_kama_pipeline_state.md`.
+
+Note (from the user): folders excluded from the repo (`workspace/`, `resources/ocr/`, etc.) may be
+in different locations on different computers, so paths in memory/logs are not portable; verify
+locally. Recorded in `CLAUDE.md` ("Cross-machine context") and the pipeline-state memory.
+
+Still open: only the unscheduled code-quality backlog (`project_improvement_backlog.md`).
+
 ## 2026-09-27 — kama-vol-084 done and posted; Dedris converter merged to master
 
 `kama-vol-084` is finished: all five texts (`a`–`e`) run through `process_volume.py`

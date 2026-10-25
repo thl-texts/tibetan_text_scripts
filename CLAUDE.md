@@ -17,6 +17,14 @@ See `SESSION_LOG.md` for a running log of notable Claude Code sessions (fixes,
 decisions, in-progress work) — check it for context when starting work here on a
 different machine, and add an entry after a substantive session.
 
+## Cross-machine context
+
+The repo is used from several computers. Project memory lives in `.claude/memory/` (start with
+`project_kama_pipeline_state.md`; index in `MEMORY.md`) and narrative history in `SESSION_LOG.md`,
+both committed. **Gitignored folders (`workspace/`, `resources/ocr/`, `resources/worddocs/`,
+`test/`, the Teams output folder) may be in different locations, or absent, on each machine** —
+check the real path before relying on one from memory or the logs.
+
 ## Running scripts
 
 Scripts use `argparse` and are run directly, e.g.:
